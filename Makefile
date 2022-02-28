@@ -60,10 +60,6 @@ package:build
 	docker-compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository pypi dist/*
 # password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/
 
-.PHONY:shell
-shell:devdocker ## Brings up the bash shell in dev docker
-	docker-compose run --rm --name mockserver_client dev /bin/bash
-
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help.
