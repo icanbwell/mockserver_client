@@ -1,24 +1,24 @@
 import collections
 import json
 import glob
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional, Union, cast
 
 import dictdiffer  # type: ignore
 from requests import put, Response
-from spark_pipeline_framework.logger.yarn_logger import get_logger
 
-from tests.utilities.mockserver_client.exceptions.mock_server_exception import (
+from mockserver_client.exceptions.mock_server_exception import (
     MockServerException,
 )
-from tests.utilities.mockserver_client.exceptions.mock_server_expectation_not_found_exception import (
+from mockserver_client.exceptions.mock_server_expectation_not_found_exception import (
     MockServerExpectationNotFoundException,
 )
-from tests.utilities.mockserver_client.exceptions.mock_server_json_content_mismatch_exception import (
+from mockserver_client.exceptions.mock_server_json_content_mismatch_exception import (
     MockServerJsonContentMismatchException,
 )
-from tests.utilities.mockserver_client.exceptions.mock_server_request_not_found_exception import (
+from mockserver_client.exceptions.mock_server_request_not_found_exception import (
     MockServerRequestNotFoundException,
 )
 from ._timing import _Timing
@@ -34,7 +34,7 @@ class MockServerFriendlyClient(object):
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
         self.expectations: List[Tuple[Dict[str, Any], _Timing]] = []
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger("MockServerClient")
 
     def _call(self, command: str, data: Any = None) -> Response:
         return put("{}/{}".format(self.base_url, command), data=data)
@@ -77,7 +77,10 @@ class MockServerFriendlyClient(object):
         self.expectations.append((request1, timing))
 
     def expect_files_as_requests(
-        self, folder: Path, url_prefix: Optional[str], add_file_name: bool = False,
+        self,
+        folder: Path,
+        url_prefix: Optional[str],
+        add_file_name: bool = False,
     ) -> List[str]:
         """
         Expects the files as requests
@@ -119,14 +122,17 @@ class MockServerFriendlyClient(object):
                 print(f"Mocking {self.base_url}{path}: {request_parameters}")
         return files
 
-    def expect_default(self,) -> None:
+    def expect_default(
+        self,
+    ) -> None:
         response1: Dict[str, Any] = response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
         self.expectations.append(({}, timing))
 
     def match_to_recorded_requests(
-        self, recorded_requests: List[Dict[str, Any]],
+        self,
+        recorded_requests: List[Dict[str, Any]],
     ) -> List[MockServerException]:
         exceptions: List[MockServerException] = []
         # there are 4 cases possible:
