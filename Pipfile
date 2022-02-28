@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 requests = ">=2.25.1"
 types-requests="~=0.1.11"
+dictdiffer = ">=0.8.1"
 
 [dev-packages]
 setuptools="*"

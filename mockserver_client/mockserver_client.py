@@ -35,6 +35,7 @@ class MockServerFriendlyClient(object):
         self.base_url = base_url
         self.expectations: List[Tuple[Dict[str, Any], _Timing]] = []
         self.logger = logging.getLogger("MockServerClient")
+        self.logger.setLevel(logging.INFO)
 
     def _call(self, command: str, data: Any = None) -> Response:
         return put("{}/{}".format(self.base_url, command), data=data)
