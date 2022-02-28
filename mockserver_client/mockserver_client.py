@@ -3,6 +3,7 @@ import json
 import glob
 import logging
 import os
+from logging import Logger
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional, Union, cast
 
@@ -32,9 +33,9 @@ class MockServerFriendlyClient(object):
     """
 
     def __init__(self, base_url: str) -> None:
-        self.base_url = base_url
+        self.base_url: str = base_url
         self.expectations: List[Tuple[Dict[str, Any], _Timing]] = []
-        self.logger = logging.getLogger("MockServerClient")
+        self.logger: Logger = logging.getLogger("MockServerClient")
         self.logger.setLevel(logging.INFO)
 
     def _call(self, command: str, data: Any = None) -> Response:
