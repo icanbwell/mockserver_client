@@ -55,11 +55,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/icanbwell/mockserver_client",
     packages=find_packages(),
-    install_requires=[
-        "requests>=2.25.1",
-        "types-requests~=0.1.11",
-        "dictdiffer>=0.8.1",
-    ],
+    install_requires=["requests", "types-requests", "dictdiffer"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",

@@ -36,10 +36,11 @@ run-pre-commit: setup-pre-commit
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
 	docker-compose run --rm --name mockserver_client dev pipenv sync && \
-	make devdocker
+	make devdocker && \
+	make pipenv-setup
 
 .PHONY:tests
-tests:
+tests: up
 	docker-compose run --rm --name mockserver_client dev pytest tests
 
 .PHONY:shell
