@@ -7,7 +7,7 @@ from os import path, getcwd
 # from https://packaging.python.org/tutorials/packaging-projects/
 
 # noinspection SpellCheckingInspection
-package_name = "mockserver_client"
+package_name = "helix_mockserver_client"
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

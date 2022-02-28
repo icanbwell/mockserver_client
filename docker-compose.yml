@@ -9,6 +9,8 @@ services:
       - ./:/src/
     container_name: mockserver_client_dev
     working_dir: /src
+    env_file:
+      - docker.env
 
   mock-server:
     image: jamesdbloom/mockserver:mockserver-5.11.2
