@@ -170,7 +170,11 @@ class MockServerFriendlyClient(object):
                     json1 = json.loads(json1)
                 if not isinstance(json1, list):
                     json1 = [json1]
-                json1_id: str = json1[0]["id"] if "id" in json1[0] else None
+                json1_id: str = (
+                    json1[0]["id"]
+                    if json1 is not None and json1[0] is not None and "id" in json1[0]
+                    else None
+                )
                 if json1_id is not None:
                     recorded_request_ids.append(json1_id)
 
@@ -301,12 +305,20 @@ class MockServerFriendlyClient(object):
                 json1 = json.loads(json1)
             if not isinstance(json1, list):
                 json1 = [json1]
-            json1_id: str = json1[0]["id"] if "id" in json1[0] else None
+            json1_id: str = (
+                json1[0]["id"]
+                if json1 is not None and json1[0] is not None and "id" in json1[0]
+                else None
+            )
             if isinstance(json2, str):
                 json2 = json.loads(json2)
             if not isinstance(json2, list):
                 json2 = [json2]
-            json2_id: str = json2[0]["id"] if "id" in json2[0] else None
+            json2_id: str = (
+                json2[0]["id"]
+                if json2 is not None and json2[0] is not None and "id" in json2[0]
+                else None
+            )
             if "id" in json1[0] and "id" in json2[0]:
                 return True if json1_id == json2_id else False
             else:
@@ -413,7 +425,7 @@ def mock_request(
     method: Optional[str] = None,
     path: Optional[str] = None,
     querystring: Optional[Dict[str, Any]] = None,
-    body: Optional[Dict[str, Any]] = None,
+    body: Optional[Union[str, Dict[str, Any]]] = None,
     headers: Optional[Dict[str, Any]] = None,
     cookies: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -429,7 +441,7 @@ def mock_request(
 
 def mock_response(
     code: Optional[int] = None,
-    body: Optional[str] = None,
+    body: Optional[Union[str, Dict[str, Any]]] = None,
     headers: Optional[Dict[str, Any]] = None,
     cookies: Optional[str] = None,
     delay: Optional[str] = None,
