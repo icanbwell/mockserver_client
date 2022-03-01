@@ -428,7 +428,7 @@ def mock_request(
 
 
 def mock_response(
-    code: Optional[str] = None,
+    code: Optional[int] = None,
     body: Optional[str] = None,
     headers: Optional[Dict[str, Any]] = None,
     cookies: Optional[str] = None,
