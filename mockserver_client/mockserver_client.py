@@ -82,6 +82,7 @@ class MockServerFriendlyClient(object):
         self,
         folder: Path,
         url_prefix: Optional[str],
+        content_type: str = "application/fhir+json",
         add_file_name: bool = False,
     ) -> List[str]:
         """
@@ -116,9 +117,14 @@ class MockServerFriendlyClient(object):
                     raise Exception(
                         "`request_result` key not found. It is supposed to contain the expected result of the requst function."
                     )
+                body = (
+                    json.dumps(request_result)
+                    if content_type == "application/fhir+json"
+                    else request_result
+                )
                 self.expect(
-                    request(path=path, **request_parameters),
-                    response(body=json.dumps(request_result)),
+                    mock_request(path=path, **request_parameters),
+                    mock_response(body=body),
                     timing=times(1),
                 )
                 print(f"Mocking {self.base_url}{path}: {request_parameters}")
@@ -127,7 +133,7 @@ class MockServerFriendlyClient(object):
     def expect_default(
         self,
     ) -> None:
-        response1: Dict[str, Any] = response()
+        response1: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
         self.expectations.append(({}, timing))
@@ -165,7 +171,8 @@ class MockServerFriendlyClient(object):
                 if not isinstance(json1, list):
                     json1 = [json1]
                 json1_id: str = json1[0]["id"] if "id" in json1[0] else None
-                recorded_request_ids.append(json1_id)
+                if json1_id is not None:
+                    recorded_request_ids.append(json1_id)
 
         for expected_request, timing in self.expectations:
             found_expectation: bool = False
@@ -223,6 +230,7 @@ class MockServerFriendlyClient(object):
                     url=unmatched_request["path"],
                     json_dict=unmatched_request["body"]["json"]
                     if "body" in unmatched_request
+                    and "json" in unmatched_request["body"]
                     else None,
                 )
             )
@@ -242,7 +250,42 @@ class MockServerFriendlyClient(object):
             and MockServerFriendlyClient.does_id_in_request_match(
                 request1=request1, request2=request2
             )
+            and MockServerFriendlyClient.does_request_body_match(
+                request1=request1, request2=request2
+            )
         )
+
+    @staticmethod
+    def does_request_body_match(
+        request1: Dict[str, Any], request2: Dict[str, Any]
+    ) -> bool:
+        if "body" not in request1 and "body" not in request2:
+            return True
+        if "body" in request1 and "body" not in request2:
+            return False
+        if "body" in request2 and "body" not in request1:
+            return False
+        body1 = request1["body"]
+        body2 = request2["body"]
+        if "json" in body1 and "json" in body2:
+            return True if body1["json"] == body2["json"] else False
+        if "string" in body1 and request1["headers"]["Content-Type"] == [
+            "application/x-www-form-urlencoded"
+        ]:
+            # mockserver stores x-form-url
+            body1 = body1["string"]
+            if isinstance(body1, str):
+                body1 = body1.split("&")
+                body1 = {i.split("=")[0]: i.split("=")[1] for i in body1}
+        if "string" in body2 and request2["headers"]["Content-Type"] == [
+            "application/x-www-form-urlencoded"
+        ]:
+            # mockserver stores x-form-url
+            body2 = body2["string"]
+            if isinstance(body2, str):
+                body2 = body2.split("&")
+                body2 = {i.split("=")[0]: i.split("=")[1] for i in body2}
+        return True if body1 == body2 else False
 
     @staticmethod
     def does_id_in_request_match(
@@ -366,7 +409,7 @@ class MockServerFriendlyClient(object):
         return normalized_params
 
 
-def request(
+def mock_request(
     method: Optional[str] = None,
     path: Optional[str] = None,
     querystring: Optional[Dict[str, Any]] = None,
@@ -384,7 +427,7 @@ def request(
     )
 
 
-def response(
+def mock_response(
     code: Optional[str] = None,
     body: Optional[str] = None,
     headers: Optional[Dict[str, Any]] = None,
@@ -455,7 +498,7 @@ def json_response(
 ) -> Dict[str, Any]:
     headers = headers or {}
     headers["Content-Type"] = "application/json"
-    return response(body=json.dumps(body), headers=headers, **kwargs)
+    return mock_response(body=json.dumps(body), headers=headers, **kwargs)
 
 
 class _Option:
