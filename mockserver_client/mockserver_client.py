@@ -272,7 +272,13 @@ class MockServerFriendlyClient(object):
         body1 = request1["body"]
         body2 = request2["body"]
         if "json" in body1 and "json" in body2:
-            return True if body1["json"] == body2["json"] else False
+            json1 = body1["json"]
+            if isinstance(json1, str):
+                json1 = json.loads(json1)
+            json2 = body2["json"]
+            if isinstance(json2, str):
+                json2 = json.loads(json2)
+            return True if json1 == json2 else False
         if "string" in body1 and request1["headers"]["Content-Type"] == [
             "application/x-www-form-urlencoded"
         ]:
