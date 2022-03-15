@@ -28,27 +28,30 @@ class MockServerVerifyException(Exception):
                 if not isinstance(actual_list_or_obj, list):
                     actual_list_or_obj = [actual_list_or_obj]
                 for actual in actual_list_or_obj:
-                    # noinspection PyPep8Naming
-                    resourceType: str = actual["resourceType"]
-                    id_: str = actual["id"]
-                    # now iterate through the files to find the file for this
-                    file_name: str
-                    for file_name in self.files:
-                        with open(file_name, "r") as file:
-                            json_data = json.loads(file.read())
-                            if isinstance(json_data, list):
-                                for json_data1 in json_data:
+                    if "resourceType" in actual:
+                        # noinspection PyPep8Naming
+                        resourceType: str = actual["resourceType"]
+                        id_: str = actual["id"]
+                        # now iterate through the files to find the file for this
+                        file_name: str
+                        for file_name in self.files:
+                            with open(file_name, "r") as file:
+                                json_data = json.loads(file.read())
+                                if isinstance(json_data, list):
+                                    for json_data1 in json_data:
+                                        if (
+                                            json_data1["resourceType"] == resourceType
+                                            and json_data1["id"] == id_
+                                        ):
+                                            exception.expected_file_path = Path(
+                                                file_name
+                                            )
+                                else:
                                     if (
-                                        json_data1["resourceType"] == resourceType
-                                        and json_data1["id"] == id_
+                                        json_data["resourceType"] == resourceType
+                                        and json_data["id"] == id_
                                     ):
                                         exception.expected_file_path = Path(file_name)
-                            else:
-                                if (
-                                    json_data["resourceType"] == resourceType
-                                    and json_data["id"] == id_
-                                ):
-                                    exception.expected_file_path = Path(file_name)
 
     def __str__(self) -> str:
         return ",".join(

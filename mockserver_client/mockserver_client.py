@@ -182,8 +182,11 @@ class MockServerFriendlyClient(object):
             found_expectation: bool = False
             try:
                 for recorded_request in recorded_requests:
+                    # first try to match on both request url AND body
                     if "method" in expected_request and self.does_request_match(
-                        request1=expected_request, request2=recorded_request
+                        request1=expected_request,
+                        request2=recorded_request,
+                        check_body=True,
                     ):
                         found_expectation = True
                         # remove request from unmatched_requests
@@ -191,7 +194,7 @@ class MockServerFriendlyClient(object):
                             r
                             for r in unmatched_requests
                             if self.does_request_match(
-                                request1=r, request2=recorded_request
+                                request1=r, request2=recorded_request, check_body=True
                             )
                         ]
                         if len(unmatched_request_list) > 0:
@@ -202,6 +205,36 @@ class MockServerFriendlyClient(object):
                         ):
                             expected_body = expected_request["body"]["json"]
                             actual_body = recorded_request["body"]["json"]
+                            self.compare_request_bodies(actual_body, expected_body)
+                    # now compare using just the request url
+                    elif "method" in expected_request and self.does_request_match(
+                        request1=expected_request,
+                        request2=recorded_request,
+                        check_body=False,
+                    ):
+                        found_expectation = True
+                        # remove request from unmatched_requests
+                        unmatched_request_list = [
+                            r
+                            for r in unmatched_requests
+                            if self.does_request_match(
+                                request1=r, request2=recorded_request, check_body=False
+                            )
+                        ]
+                        if (
+                            "body" in expected_request
+                            and "json" in expected_request["body"]
+                        ):
+                            expected_body = expected_request["body"]["json"]
+                            actual_body = recorded_request["body"]["json"]
+                            if len(unmatched_request_list) > 0:
+                                unmatched_requests.remove(unmatched_request_list[0])
+                            self.compare_request_bodies(actual_body, expected_body)
+                        elif "body" in expected_request:
+                            expected_body = expected_request["body"]
+                            actual_body = recorded_request["body"]
+                            if len(unmatched_request_list) > 0:
+                                unmatched_requests.remove(unmatched_request_list[0])
                             self.compare_request_bodies(actual_body, expected_body)
 
             except MockServerJsonContentMismatchException as e:
@@ -241,7 +274,9 @@ class MockServerFriendlyClient(object):
         return exceptions
 
     @staticmethod
-    def does_request_match(request1: Dict[str, Any], request2: Dict[str, Any]) -> bool:
+    def does_request_match(
+        request1: Dict[str, Any], request2: Dict[str, Any], check_body: bool
+    ) -> bool:
         return (
             request1["method"] == request2["method"]
             and request1["path"] == request2["path"]
@@ -254,8 +289,11 @@ class MockServerFriendlyClient(object):
             and MockServerFriendlyClient.does_id_in_request_match(
                 request1=request1, request2=request2
             )
-            and MockServerFriendlyClient.does_request_body_match(
-                request1=request1, request2=request2
+            and (
+                not check_body
+                or MockServerFriendlyClient.does_request_body_match(
+                    request1=request1, request2=request2
+                )
             )
         )
 
