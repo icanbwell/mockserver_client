@@ -28,7 +28,7 @@ class MockServerVerifyException(Exception):
                 if not isinstance(actual_list_or_obj, list):
                     actual_list_or_obj = [actual_list_or_obj]
                 for actual in actual_list_or_obj:
-                    if "resourceType" in actual:
+                    if "resourceType" in actual and "id" in actual:
                         # noinspection PyPep8Naming
                         resourceType: str = actual["resourceType"]
                         id_: str = actual["id"]
