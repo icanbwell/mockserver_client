@@ -1,11 +1,12 @@
 import collections
-import json
 import glob
+import json
 import logging
 import os
 from logging import Logger
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional, Union, cast
+from urllib.parse import parse_qs
 
 import dictdiffer  # type: ignore
 from requests import put, Response
@@ -22,8 +23,8 @@ from mockserver_client.exceptions.mock_server_json_content_mismatch_exception im
 from mockserver_client.exceptions.mock_server_request_not_found_exception import (
     MockServerRequestNotFoundException,
 )
-from ._timing import _Timing
 from ._time import _Time
+from ._timing import _Timing
 from .mockserver_verify_exception import MockServerVerifyException
 
 
@@ -298,6 +299,11 @@ class MockServerFriendlyClient(object):
         )
 
     @staticmethod
+    def convert_query_parameters_to_dict(query: str) -> Dict[str, str]:
+        params: Dict[str, List[str]] = parse_qs(query)
+        return {k: v[0] for k, v in params.items()}
+
+    @staticmethod
     def does_request_body_match(
         request1: Dict[str, Any], request2: Dict[str, Any]
     ) -> bool:
@@ -323,16 +329,14 @@ class MockServerFriendlyClient(object):
             # mockserver stores x-form-url
             body1 = body1["string"]
             if isinstance(body1, str):
-                body1 = body1.split("&")
-                body1 = {i.split("=")[0]: i.split("=")[1] for i in body1}
+                body1 = MockServerFriendlyClient.convert_query_parameters_to_dict(body1)
         if "string" in body2 and request2["headers"]["Content-Type"] == [
             "application/x-www-form-urlencoded"
         ]:
             # mockserver stores x-form-url
             body2 = body2["string"]
             if isinstance(body2, str):
-                body2 = body2.split("&")
-                body2 = {i.split("=")[0]: i.split("=")[1] for i in body2}
+                body2 = MockServerFriendlyClient.convert_query_parameters_to_dict(body2)
         return True if body1 == body2 else False
 
     @staticmethod
