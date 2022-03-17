@@ -37,7 +37,7 @@ class MockServerFriendlyClient(object):
         self.base_url: str = base_url
         self.expectations: List[Tuple[Dict[str, Any], _Timing]] = []
         self.logger: Logger = logging.getLogger("MockServerClient")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
 
     def _call(self, command: str, data: Any = None) -> Response:
         return put("{}/{}".format(self.base_url, command), data=data)
@@ -128,7 +128,38 @@ class MockServerFriendlyClient(object):
                     mock_response(body=body),
                     timing=times(1),
                 )
-                print(f"Mocking {self.base_url}{path}: {request_parameters}")
+                self.logger.info(f"Mocking {self.base_url}{path}: {request_parameters}")
+        return files
+
+    def expect_files_as_requests_from_url(
+        self,
+        folder: Path,
+        path: str,
+        add_file_name: bool = False,
+    ) -> List[str]:
+        """
+        Expects the files as requests
+        """
+        file_path: str
+        files: List[str] = sorted(
+            glob.glob(str(folder.joinpath("**/*.json")), recursive=True)
+        )
+        for file_path in files:
+            file_name = os.path.basename(file_path)
+            with open(file_path, "r") as file:
+                content = json.loads(file.read())
+                path = (
+                    f"{path}/{os.path.splitext(file_name)[0]}"
+                    if add_file_name
+                    else path
+                )
+                body = json.dumps(content)
+                self.expect(
+                    mock_request(path=path),
+                    mock_response(body=body),
+                    timing=times(1),
+                )
+                self.logger.info(f"Mocking {self.base_url}{path}")
         return files
 
     def expect_default(
@@ -207,19 +238,23 @@ class MockServerFriendlyClient(object):
                             expected_body = expected_request["body"]["json"]
                             actual_body = recorded_request["body"]["json"]
                             self.compare_request_bodies(actual_body, expected_body)
-                    # now compare using just the request url
-                    elif "method" in expected_request and self.does_request_match(
-                        request1=expected_request,
-                        request2=recorded_request,
-                        check_body=False,
-                    ):
+                    else:
+                        # find all requests that match on url since there can be multiple
+                        # matching_expectations = [
+                        #     m
+                        #     for m, timing in self.expectations
+                        #     if "method" in m
+                        #     and self.does_request_match(
+                        #         request1=m, request2=recorded_request, check_body=False
+                        #     )
+                        # ]
                         found_expectation = True
                         # remove request from unmatched_requests
                         unmatched_request_list = [
                             r
                             for r in unmatched_requests
                             if self.does_request_match(
-                                request1=r, request2=recorded_request, check_body=False
+                                request1=r, request2=recorded_request, check_body=True
                             )
                         ]
                         if (
@@ -228,6 +263,10 @@ class MockServerFriendlyClient(object):
                         ):
                             expected_body = expected_request["body"]["json"]
                             actual_body = recorded_request["body"]["json"]
+                            assert len(unmatched_request_list) < 2, (
+                                f"Found {len(unmatched_request_list)}"
+                                f" unmatched requests for {recorded_request}"
+                            )
                             if len(unmatched_request_list) > 0:
                                 unmatched_requests.remove(unmatched_request_list[0])
                             self.compare_request_bodies(actual_body, expected_body)
