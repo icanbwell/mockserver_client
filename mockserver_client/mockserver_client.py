@@ -382,7 +382,8 @@ class MockServerFriendlyClient(object):
                 assert (
                     len(unmatched_request_list) >= 0
                 ), f"{','.join([str(c) for c in unmatched_request_list])}"
-                unmatched_requests.remove(unmatched_request_list[0])
+                if len(unmatched_request_list) > 0:
+                    unmatched_requests.remove(unmatched_request_list[0])
 
             # now try to find matches on just url
         return found_expectation
