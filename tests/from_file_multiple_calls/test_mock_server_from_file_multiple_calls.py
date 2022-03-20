@@ -26,6 +26,7 @@ def test_mock_server_from_file_multiple_calls() -> None:
     mock_client.expect_files_as_requests_from_url(
         requests_dir, path=f"/{test_name}/foo/1/merge"
     )
+    mock_client.expect_default()
 
     http = requests.Session()
 
