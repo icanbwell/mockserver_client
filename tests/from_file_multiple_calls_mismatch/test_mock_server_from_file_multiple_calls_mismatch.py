@@ -18,8 +18,10 @@ from mockserver_client.mockserver_client import MockServerFriendlyClient
 from mockserver_client.mockserver_verify_exception import MockServerVerifyException
 
 
-def test_mock_server_from_file_multiple_calls_fail() -> None:
-    requests_dir: Path = Path(__file__).parent.joinpath("./request_json_calls")
+def test_mock_server_from_file_multiple_calls_mismatch() -> None:
+    expectations_dir: Path = Path(__file__).parent.joinpath("./expectations")
+    requests_dir: Path = Path(__file__).parent.joinpath("./requests")
+
     test_name = "test_mock_server"
 
     mock_server_url = "http://mock-server:1080"
@@ -31,7 +33,7 @@ def test_mock_server_from_file_multiple_calls_fail() -> None:
     mock_client.reset()
 
     mock_client.expect_files_as_requests_from_url(
-        requests_dir, path=f"/{test_name}/foo/1/merge"
+        expectations_dir, path=f"/{test_name}/foo/1/merge"
     )
     mock_client.expect_default()
 
@@ -44,9 +46,6 @@ def test_mock_server_from_file_multiple_calls_fail() -> None:
     for file_path in files:
         with open(file_path, "r") as file:
             content: Dict[str, Any] = json.loads(file.read())
-            # change the content of one of the files to make sure we find the mismatch
-            if file_path.endswith("2222222222-1334245.1.json"):
-                content["meta"]["source"] = "https://altruahealthshare.org/bad"
             response: Response = http.post(
                 mock_server_url + "/" + test_name + "/foo/1/merge",
                 json=[content],
