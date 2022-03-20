@@ -32,8 +32,8 @@ def test_mock_server_from_file_multiple_calls_mismatch() -> None:
     mock_client.clear(f"/{test_name}/*")
     mock_client.reset()
 
-    mock_client.expect_files_as_requests_from_url(
-        expectations_dir, path=f"/{test_name}/foo/1/merge"
+    mock_client.expect_files_as_json_requests(
+        expectations_dir, path=f"/{test_name}/foo/1/merge", json_response_body={}
     )
     mock_client.expect_default()
 

@@ -142,10 +142,11 @@ class MockServerFriendlyClient(object):
                 self.logger.info(f"Mocking {self.base_url}{path}: {request_parameters}")
         return files
 
-    def expect_files_as_requests_from_url(
+    def expect_files_as_json_requests(
         self,
         folder: Path,
         path: str,
+        json_response_body: Dict[str, Any],
         add_file_name: bool = False,
     ) -> List[str]:
         """
@@ -164,10 +165,9 @@ class MockServerFriendlyClient(object):
                     if add_file_name
                     else path
                 )
-                body = json.dumps(content)
                 self.expect(
                     mock_request(path=path, body=json_equals([content]), method="POST"),
-                    mock_response(body=body),
+                    mock_response(body=json.dumps(json_response_body)),
                     timing=times(1),
                 )
                 self.logger.info(f"Mocking {self.base_url}{path}")
