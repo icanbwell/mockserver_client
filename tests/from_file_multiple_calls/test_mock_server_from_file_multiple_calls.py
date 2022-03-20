@@ -1,6 +1,6 @@
 from glob import glob
 from pathlib import Path
-from typing import List
+from typing import List, Any, Dict
 
 import requests
 import json
@@ -35,10 +35,10 @@ def test_mock_server_from_file_multiple_calls() -> None:
     )
     for file_path in files:
         with open(file_path, "r") as file:
-            content = json.loads(file.read())
+            content: Dict[str, Any] = json.loads(file.read())
             response: Response = http.post(
                 mock_server_url + "/" + test_name + "/foo/1/merge",
-                data=content,
+                json=[content],
             )
             assert response.ok
 

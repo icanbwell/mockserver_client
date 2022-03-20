@@ -5,7 +5,7 @@ import logging
 import os
 from logging import Logger
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 from urllib.parse import parse_qs
 
 import dictdiffer  # type: ignore
@@ -28,6 +28,15 @@ from ._timing import _Timing
 from .mockserver_verify_exception import MockServerVerifyException
 
 
+class Expectation:
+    def __init__(
+        self, request: Dict[str, Any], response: Dict[str, Any], timing: _Timing
+    ) -> None:
+        self.request: Dict[str, Any] = request
+        self.response: Dict[str, Any] = response
+        self.timing: _Timing = timing
+
+
 class MockServerFriendlyClient(object):
     """
     from https://pypi.org/project/mockserver-friendly-client/
@@ -35,7 +44,7 @@ class MockServerFriendlyClient(object):
 
     def __init__(self, base_url: str) -> None:
         self.base_url: str = base_url
-        self.expectations: List[Tuple[Dict[str, Any], _Timing]] = []
+        self.expectations: List[Expectation] = []
         self.logger: Logger = logging.getLogger("MockServerClient")
         self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
 
@@ -77,7 +86,9 @@ class MockServerFriendlyClient(object):
         time_to_live: Any = None,
     ) -> None:
         self.stub(request1, response1, timing, time_to_live)
-        self.expectations.append((request1, timing))
+        self.expectations.append(
+            Expectation(request=request1, response=response1, timing=timing)
+        )
 
     def expect_files_as_requests(
         self,
@@ -147,7 +158,7 @@ class MockServerFriendlyClient(object):
         for file_path in files:
             file_name = os.path.basename(file_path)
             with open(file_path, "r") as file:
-                content = json.loads(file.read())
+                content: Dict[str, Any] = json.loads(file.read())
                 path = (
                     f"{path}/{os.path.splitext(file_name)[0]}"
                     if add_file_name
@@ -155,7 +166,7 @@ class MockServerFriendlyClient(object):
                 )
                 body = json.dumps(content)
                 self.expect(
-                    mock_request(path=path),
+                    mock_request(path=path, body=json_equals([content])),
                     mock_response(body=body),
                     timing=times(1),
                 )
@@ -168,7 +179,7 @@ class MockServerFriendlyClient(object):
         response1: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
-        self.expectations.append(({}, timing))
+        self.expectations.append(Expectation({}, {}, timing))
 
     def match_to_recorded_requests(
         self,
@@ -184,14 +195,15 @@ class MockServerFriendlyClient(object):
         unmatched_requests: List[Dict[str, Any]] = [r for r in recorded_requests]
         expected_request: Dict[str, Any]
         self.logger.debug("-------- EXPECTATIONS --------")
-        for expected_request, timing in self.expectations:
-            self.logger.debug(expected_request)
+        for expectation in self.expectations:
+            self.logger.debug(expectation)
         self.logger.debug("-------- END EXPECTATIONS --------")
         self.logger.debug("-------- REQUESTS --------")
         for recorded_request in recorded_requests:
             self.logger.debug(recorded_request)
         self.logger.debug("-------- END REQUESTS --------")
 
+        # get ids of all recorded requests
         recorded_request_ids: List[str] = []
         for recorded_request in recorded_requests:
             json1 = recorded_request.get("body", {}).get("json", None)
@@ -210,7 +222,9 @@ class MockServerFriendlyClient(object):
                 if json1_id is not None:
                     recorded_request_ids.append(json1_id)
 
-        for expected_request, timing in self.expectations:
+        # now try to match requests to expectations
+        for expectation in self.expectations:
+            expected_request = expectation.request
             found_expectation: bool = False
             try:
                 for recorded_request in recorded_requests:
@@ -287,15 +301,16 @@ class MockServerFriendlyClient(object):
                 self.logger.info(f'{",".join(recorded_request_ids)}')
                 self.logger.info("---- END EXPECTATION NOT MATCHED ----")
         # now fail for every expectation in unmatched_expectations
-        for expectation in unmatched_expectations:
+        for unmatched_expectation in unmatched_expectations:
             exceptions.append(
                 MockServerExpectationNotFoundException(
-                    url=expectation["path"],
-                    json=expectation["body"]["json"]
-                    if "body" in expectation and "json" in expectation["body"]
+                    url=unmatched_expectation["path"],
+                    json=unmatched_expectation["body"]["json"]
+                    if "body" in unmatched_expectation
+                    and "json" in unmatched_expectation["body"]
                     else None,
-                    querystring_params=expectation["queryStringParameters"]
-                    if "queryStringParameters" in expectation
+                    querystring_params=unmatched_expectation["queryStringParameters"]
+                    if "queryStringParameters" in unmatched_expectation
                     else None,
                 )
             )
