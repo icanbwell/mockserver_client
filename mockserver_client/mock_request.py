@@ -26,37 +26,18 @@ class MockRequest:
             self.body_list, list
         ), f"{type(self.body_list)}: {json.dumps(self.body_list)}"
 
-        self.json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
-            json.loads(self.body_list[0].get("json"))  # type: ignore
-            if self.body_list and isinstance(self.body_list[0].get("json"), str)
-            else self.body_list[0].get("json")
-            if self.body_list
+        raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
+            self.body_list[0].get("json")
+            if self.body_list is not None and len(self.body_list) > 0
             else None
         )
-        assert (
-            self.json_content is None
-            or isinstance(self.json_content, dict)
-            or isinstance(self.json_content, list)
-        ), f"{type(self.json_content)}: {json.dumps(self.json_content)}"
-        # convert strings to Dict[str, Any]
-        if self.json_content is not None and isinstance(self.json_content, list):
-            self.json_content = [
-                (j if isinstance(j, dict) else json.loads(j)) for j in self.json_content
-            ]
-
-        if isinstance(self.json_content, list):
-            for json_item in self.json_content:
-                assert isinstance(
-                    json_item, dict
-                ), f"{type(json_item)}: {json.dumps(json_item)}"
 
         self.json_list: Optional[List[Dict[str, Any]]] = (
-            self.json_content
-            if isinstance(self.json_content, list)
-            else [self.json_content]
-            if self.json_content
+            MockRequest.parse_body(body=raw_json_content, headers=self.headers)
+            if raw_json_content
             else None
         )
+
         assert self.json_list is None or isinstance(
             self.json_list, list
         ), f"{type(self.json_list)}: {json.dumps(self.json_list)}"
@@ -97,14 +78,25 @@ class MockRequest:
                 return [body]
 
         if isinstance(body, list):
-            return body
+            my_list: List[Optional[List[Dict[str, Any]]]] = [
+                MockRequest.parse_body(body=c, headers=headers)
+                for c in body
+                if c is not None
+            ]
+            return [
+                item
+                for sublist in my_list
+                if sublist is not None
+                for item in sublist
+                if item is not None
+            ]
 
         assert False, f"body is in unexpected type: {type(body)}"
 
     def __str__(self) -> str:
         return (
             f"url: {self.path} \nquery params: {self.querystring_params} \n"
-            f"json: {self.json_content}"
+            f"json: {self.json_list}"
         )
 
     @staticmethod
