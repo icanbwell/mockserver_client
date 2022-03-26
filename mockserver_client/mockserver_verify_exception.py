@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Optional
 
 from .exceptions.mock_server_exception import MockServerException
 from .exceptions.mock_server_json_content_mismatch_exception import (
@@ -22,36 +22,38 @@ class MockServerVerifyException(Exception):
         exception: MockServerException
         for exception in self.exceptions:
             if isinstance(exception, MockServerJsonContentMismatchException):
-                actual_list_or_obj: Union[
-                    Dict[str, Any], List[Dict[str, Any]]
-                ] = exception.actual
-                if not isinstance(actual_list_or_obj, list):
-                    actual_list_or_obj = [actual_list_or_obj]
-                for actual in actual_list_or_obj:
-                    if "resourceType" in actual and "id" in actual:
-                        # noinspection PyPep8Naming
-                        resourceType: str = actual["resourceType"]
-                        id_: str = actual["id"]
-                        # now iterate through the files to find the file for this
-                        file_name: str
-                        for file_name in self.files:
-                            with open(file_name, "r") as file:
-                                json_data = json.loads(file.read())
-                                if isinstance(json_data, list):
-                                    for json_data1 in json_data:
+                actual_list_or_obj: Optional[
+                    List[Dict[str, Any]]
+                ] = exception.actual_json
+                if actual_list_or_obj:
+                    for actual in actual_list_or_obj:
+                        if "resourceType" in actual and "id" in actual:
+                            # noinspection PyPep8Naming
+                            resourceType: str = actual["resourceType"]
+                            id_: str = actual["id"]
+                            # now iterate through the files to find the file for this
+                            file_name: str
+                            for file_name in self.files:
+                                with open(file_name, "r") as file:
+                                    json_data = json.loads(file.read())
+                                    if isinstance(json_data, list):
+                                        for json_data1 in json_data:
+                                            if (
+                                                json_data1["resourceType"]
+                                                == resourceType
+                                                and json_data1["id"] == id_
+                                            ):
+                                                exception.expected_file_path = Path(
+                                                    file_name
+                                                )
+                                    else:
                                         if (
-                                            json_data1["resourceType"] == resourceType
-                                            and json_data1["id"] == id_
+                                            json_data["resourceType"] == resourceType
+                                            and json_data["id"] == id_
                                         ):
                                             exception.expected_file_path = Path(
                                                 file_name
                                             )
-                                else:
-                                    if (
-                                        json_data["resourceType"] == resourceType
-                                        and json_data["id"] == id_
-                                    ):
-                                        exception.expected_file_path = Path(file_name)
 
     def __str__(self) -> str:
         return ",".join(
