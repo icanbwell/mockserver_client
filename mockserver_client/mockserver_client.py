@@ -6,7 +6,6 @@ import os
 from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
-from urllib.parse import parse_qs
 
 import dictdiffer  # type: ignore
 from requests import put, Response
@@ -25,16 +24,9 @@ from mockserver_client.exceptions.mock_server_request_not_found_exception import
 )
 from ._time import _Time
 from ._timing import _Timing
+from .mock_expectation import MockExpectation
+from .mock_request import MockRequest
 from .mockserver_verify_exception import MockServerVerifyException
-
-
-class Expectation:
-    def __init__(
-        self, request: Dict[str, Any], response: Dict[str, Any], timing: _Timing
-    ) -> None:
-        self.request: Dict[str, Any] = request
-        self.response: Dict[str, Any] = response
-        self.timing: _Timing = timing
 
 
 class MockServerFriendlyClient(object):
@@ -44,7 +36,7 @@ class MockServerFriendlyClient(object):
 
     def __init__(self, base_url: str) -> None:
         self.base_url: str = base_url
-        self.expectations: List[Expectation] = []
+        self.expectations: List[MockExpectation] = []
         self.logger: Logger = logging.getLogger("MockServerClient")
         self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
 
@@ -87,7 +79,7 @@ class MockServerFriendlyClient(object):
     ) -> None:
         self.stub(request1, response1, timing, time_to_live)
         self.expectations.append(
-            Expectation(request=request1, response=response1, timing=timing)
+            MockExpectation(request=request1, response=response1, timing=timing)
         )
 
     def expect_files_as_requests(
@@ -179,11 +171,11 @@ class MockServerFriendlyClient(object):
         response1: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
-        self.expectations.append(Expectation({}, {}, timing))
+        self.expectations.append(MockExpectation({}, {}, timing))
 
     def match_to_recorded_requests(
         self,
-        recorded_requests: List[Dict[str, Any]],
+        recorded_requests: List[MockRequest],
     ) -> List[MockServerException]:
         """
         Matches recorded requests with expected requests
@@ -198,14 +190,16 @@ class MockServerFriendlyClient(object):
         :return: list of match exceptions
         """
         exceptions: List[MockServerException] = []
-        unmatched_expectations: List[Dict[str, Any]] = []
-        unmatched_requests: List[Dict[str, Any]] = [r for r in recorded_requests]
-        expected_request: Dict[str, Any]
+        unmatched_expectation_requests: List[MockRequest] = []
+        unmatched_requests: List[MockRequest] = [r for r in recorded_requests]
+        expected_request: MockRequest
         self.logger.debug("-------- EXPECTATIONS --------")
+        expectation: MockExpectation
         for expectation in self.expectations:
             self.logger.debug(expectation)
         self.logger.debug("-------- END EXPECTATIONS --------")
         self.logger.debug("-------- REQUESTS --------")
+        recorded_request: MockRequest
         for recorded_request in recorded_requests:
             self.logger.debug(recorded_request)
         self.logger.debug("-------- END REQUESTS --------")
@@ -213,21 +207,14 @@ class MockServerFriendlyClient(object):
         # get ids of all recorded requests
         recorded_request_ids: List[str] = []
         for recorded_request in recorded_requests:
-            json1 = recorded_request.get("body", {}).get("json", None)
+            json1: Optional[List[Dict[str, Any]]] = recorded_request.json_list
             if json1:
                 # get ids from body and match
                 # see if the property is string
-                if isinstance(json1, str):
-                    json1 = json.loads(json1)
-                if not isinstance(json1, list):
-                    json1 = [json1]
-                json1_id: str = (
-                    json1[0]["id"]
-                    if json1 is not None and json1[0] is not None and "id" in json1[0]
-                    else None
-                )
-                if json1_id is not None:
-                    recorded_request_ids.append(json1_id)
+                # noinspection PyTypeChecker
+                json1_id_list: List[str] = [j["id"] for j in json1 if "id" in j]
+                for j in json1_id_list:
+                    recorded_request_ids.append(j)
 
         # now try to match requests to expectations
         for expectation in self.expectations:
@@ -247,37 +234,29 @@ class MockServerFriendlyClient(object):
                     )
             except MockServerJsonContentMismatchException as e:
                 exceptions.append(e)
-            if not found_expectation and "method" in expected_request:
-                unmatched_expectations.append(expected_request)
+            if not found_expectation and expected_request.method:
+                unmatched_expectation_requests.append(expected_request)
                 self.logger.info("---- EXPECTATION NOT MATCHED ----")
                 self.logger.info(f"{expected_request}")
                 self.logger.info("IDs sent in requests")
                 self.logger.info(f'{",".join(recorded_request_ids)}')
                 self.logger.info("---- END EXPECTATION NOT MATCHED ----")
-        # now fail for every expectation in unmatched_expectations
-        for unmatched_expectation in unmatched_expectations:
+        # now fail for every expectation in unmatched_expectation_requests
+        for unmatched_expectation in unmatched_expectation_requests:
             exceptions.append(
                 MockServerExpectationNotFoundException(
-                    url=unmatched_expectation["path"],
-                    json=unmatched_expectation["body"]["json"]
-                    if "body" in unmatched_expectation
-                    and "json" in unmatched_expectation["body"]
-                    else None,
-                    querystring_params=unmatched_expectation["queryStringParameters"]
-                    if "queryStringParameters" in unmatched_expectation
-                    else None,
+                    url=unmatched_expectation.path,
+                    json_list=unmatched_expectation.json_list,
+                    querystring_params=unmatched_expectation.querystring_params,
                 )
             )
         # and for every request in unmatched_requests
         for unmatched_request in unmatched_requests:
             exceptions.append(
                 MockServerRequestNotFoundException(
-                    method=unmatched_request["method"],
-                    url=unmatched_request["path"],
-                    json_dict=unmatched_request["body"]["json"]
-                    if "body" in unmatched_request
-                    and "json" in unmatched_request["body"]
-                    else None,
+                    method=unmatched_request.method,
+                    url=unmatched_request.path,
+                    json_list=unmatched_request.json_list,
                 )
             )
         return exceptions
@@ -285,9 +264,9 @@ class MockServerFriendlyClient(object):
     def find_matches_on_request_url_only(
         self,
         *,
-        expected_request: Dict[str, Any],
-        recorded_requests: List[Dict[str, Any]],
-        unmatched_requests: List[Dict[str, Any]],
+        expected_request: MockRequest,
+        recorded_requests: List[MockRequest],
+        unmatched_requests: List[MockRequest],
     ) -> bool:
         """
         Finds matches on url only and then compares the bodies.  Returns if match was found.
@@ -300,8 +279,9 @@ class MockServerFriendlyClient(object):
         :return:
         """
         found_expectation: bool = False
+        recorded_request: MockRequest
         for recorded_request in recorded_requests:
-            if "method" in expected_request and self.does_request_match(
+            if expected_request.method and self.does_request_match(
                 request1=expected_request,
                 request2=recorded_request,
                 check_body=False,
@@ -327,30 +307,36 @@ class MockServerFriendlyClient(object):
                         request1=r, request2=recorded_request, check_body=True
                     )
                 ]
-                if "body" in expected_request and "json" in expected_request["body"]:
-                    expected_body = expected_request["body"]["json"]
-                    actual_body = recorded_request["body"]["json"]
+                if expected_request.json_list:
+                    expected_body_json: Optional[
+                        List[Dict[str, Any]]
+                    ] = expected_request.json_list
+                    actual_body_json: Optional[
+                        List[Dict[str, Any]]
+                    ] = recorded_request.json_list
                     assert len(unmatched_request_list) < 2, (
                         f"Found {len(unmatched_request_list)}"
                         f" unmatched requests for {recorded_request}"
                     )
                     if len(unmatched_request_list) > 0:
                         unmatched_requests.remove(unmatched_request_list[0])
-                    self.compare_request_bodies(actual_body, expected_body)
-                elif "body" in expected_request:
-                    expected_body = expected_request["body"]
-                    actual_body = recorded_request["body"]
+                    self.compare_request_bodies_json(
+                        actual_body_json, expected_body_json
+                    )
+                elif expected_request.body_list:
                     if len(unmatched_request_list) > 0:
                         unmatched_requests.remove(unmatched_request_list[0])
-                    self.compare_request_bodies(actual_body, expected_body)
+                    self.compare_request_bodies(
+                        recorded_request.body_list, expected_request.body_list
+                    )
         return found_expectation
 
     def find_matches_on_request_and_body(
         self,
         *,
-        expected_request: Dict[str, Any],
-        recorded_requests: List[Dict[str, Any]],
-        unmatched_requests: List[Dict[str, Any]],
+        expected_request: MockRequest,
+        recorded_requests: List[MockRequest],
+        unmatched_requests: List[MockRequest],
     ) -> bool:
         """
         Matches on both request and body and returns whether it was able to find a match
@@ -365,7 +351,7 @@ class MockServerFriendlyClient(object):
         for recorded_request in recorded_requests:
             # first try to match on both request url AND body
             # If match is found then remove this request from list of unmatched requests
-            if "method" in expected_request and self.does_request_match(
+            if expected_request.method and self.does_request_match(
                 request1=expected_request,
                 request2=recorded_request,
                 check_body=True,
@@ -390,16 +376,16 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_request_match(
-        request1: Dict[str, Any], request2: Dict[str, Any], check_body: bool
+        request1: MockRequest, request2: MockRequest, check_body: bool
     ) -> bool:
         return (
-            request1["method"] == request2["method"]
-            and request1["path"] == request2["path"]
+            request1.method == request2.method
+            and request1.path == request2.path
             and MockServerFriendlyClient.normalize_querystring_params(
-                request1.get("queryStringParameters")
+                request1.querystring_params
             )
             == MockServerFriendlyClient.normalize_querystring_params(
-                request2.get("queryStringParameters")
+                request2.querystring_params
             )
             and MockServerFriendlyClient.does_id_in_request_match(
                 request1=request1, request2=request2
@@ -413,112 +399,57 @@ class MockServerFriendlyClient(object):
         )
 
     @staticmethod
-    def convert_query_parameters_to_dict(query: str) -> Dict[str, str]:
-        params: Dict[str, List[str]] = parse_qs(query)
-        return {k: v[0] for k, v in params.items()}
-
-    @staticmethod
-    def does_request_body_match(
-        request1: Dict[str, Any], request2: Dict[str, Any]
-    ) -> bool:
-        if "body" not in request1 and "body" not in request2:
+    def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
+        if not request1.body_list and not request2.body_list:
             return True
-        if "body" in request1 and "body" not in request2:
+        if request1.body_list and not request2.body_list:
             return False
-        if "body" in request2 and "body" not in request1:
+        if request2.body_list and not request1.body_list:
             return False
-        body1 = request1["body"]
-        body2 = request2["body"]
-        if "json" in body1 and "json" in body2:
-            json1 = body1["json"]
-            if isinstance(json1, str):
-                json1 = json.loads(json1)
-            json2 = body2["json"]
-            if isinstance(json2, str):
-                json2 = json.loads(json2)
-            return True if json1 == json2 else False
-        if "string" in body1 and request1["headers"]["Content-Type"] == [
-            "application/x-www-form-urlencoded"
-        ]:
-            # mockserver stores x-form-url
-            body1 = body1["string"]
-            if isinstance(body1, str):
-                body1 = MockServerFriendlyClient.convert_query_parameters_to_dict(body1)
-        if "string" in body2 and request2["headers"]["Content-Type"] == [
-            "application/x-www-form-urlencoded"
-        ]:
-            # mockserver stores x-form-url
-            body2 = body2["string"]
-            if isinstance(body2, str):
-                body2 = MockServerFriendlyClient.convert_query_parameters_to_dict(body2)
-        return True if body1 == body2 else False
+        if request1.json_list and request2.json_list:
+            return True if request1.json_list == request2.json_list else False
+        return True if request1.body_list == request2.body_list else False
 
     @staticmethod
-    def does_id_in_request_match(
-        request1: Dict[str, Any], request2: Dict[str, Any]
-    ) -> bool:
-        json1 = request1.get("body", {}).get("json", None)
-        json2 = request2.get("body", {}).get("json", None)
+    def does_id_in_request_match(request1: MockRequest, request2: MockRequest) -> bool:
+        json1_list: Optional[List[Dict[str, Any]]] = request1.json_list
+        json2_list: Optional[List[Dict[str, Any]]] = request2.json_list
 
-        if json1 and json2:
+        if json1_list and json2_list:
             # get ids from body and match
             # see if the property is string
-            if isinstance(json1, str):
-                json1 = json.loads(json1)
-            if not isinstance(json1, list):
-                json1 = [json1]
-            json1_id: str = (
-                json1[0]["id"]
-                if json1 is not None and json1[0] is not None and "id" in json1[0]
-                else None
-            )
-            if isinstance(json2, str):
-                json2 = json.loads(json2)
-            if not isinstance(json2, list):
-                json2 = [json2]
-            json2_id: str = (
-                json2[0]["id"]
-                if json2 is not None and json2[0] is not None and "id" in json2[0]
-                else None
-            )
-            if "id" in json1[0] and "id" in json2[0]:
-                return True if json1_id == json2_id else False
-            else:
-                return True if json1[0] == json2[0] else False
-        elif json1 is None and json2 is None:
+            json1_id_list: List[str] = [j["id"] for j in json1_list if "id" in j]
+            json2_id_list: List[str] = [j["id"] for j in json2_list if "id" in j]
+            return True if json1_id_list == json2_id_list else False
+        elif json1_list is None and json2_list is None:
             return True
         else:
             return False
 
     @staticmethod
     def compare_request_bodies(
-        actual_body: Union[str, bytes], expected_body: Union[str, bytes]
+        actual_body_list: Optional[List[Dict[str, Any]]],
+        expected_body_list: Optional[List[Dict[str, Any]]],
     ) -> None:
-        if isinstance(expected_body, bytes):
-            expected_body = expected_body.decode("utf-8")
-        expected_dict: Union[Dict[str, Any], List[Dict[str, Any]]] = (
-            expected_body
-            if isinstance(expected_body, dict)
-            else json.loads(expected_body)
-        )
-        if not isinstance(
-            expected_dict, list
-        ):  # make both lists so the compare works properly
-            expected_dict = [expected_dict]
-        actual_dict: Union[Dict[str, Any], List[Dict[str, Any]]] = (
-            actual_body
-            if isinstance(actual_body, dict) or isinstance(actual_body, list)
-            else json.loads(actual_body)
-        )
-        if not isinstance(
-            actual_dict, list
-        ):  # make both lists so the compare works properly
-            actual_dict = [actual_dict]
-        differences = list(dictdiffer.diff(expected_dict, actual_dict))
+        differences = list(dictdiffer.diff(expected_body_list, actual_body_list))
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
-                actual=actual_dict,
-                expected=expected_dict,
+                actual_json=actual_body_list,
+                expected_json=expected_body_list,
+                differences=differences,
+                expected_file_path=Path(),
+            )
+
+    @staticmethod
+    def compare_request_bodies_json(
+        actual_json: Optional[List[Dict[str, Any]]],
+        expected_json: Optional[List[Dict[str, Any]]],
+    ) -> None:
+        differences = list(dictdiffer.diff(expected_json, actual_json))
+        if len(differences) > 0:
+            raise MockServerJsonContentMismatchException(
+                actual_json=actual_json,
+                expected_json=expected_json,
                 differences=differences,
                 expected_file_path=Path(),
             )
@@ -526,15 +457,17 @@ class MockServerFriendlyClient(object):
     def verify_expectations(
         self, test_name: Optional[str] = None, files: Optional[List[str]] = None
     ) -> None:
-        recorded_requests: List[Dict[str, Any]] = self.retrieve()
+        recorded_requests: List[MockRequest] = self.retrieve_requests()
         self.logger.debug(f"Count of retrieved requests: {len(recorded_requests)}")
         self.logger.debug("-------- All Retrieved Requests -----")
         for recorded_request in recorded_requests:
             self.logger.debug(f"{recorded_request}")
         self.logger.debug("-------- End All Retrieved Requests -----")
-        # now filter to requests for this test only
+        # now filter to the requests for this test only
         if test_name is not None:
-            recorded_requests = [r for r in recorded_requests if test_name in r["path"]]
+            recorded_requests = [
+                r for r in recorded_requests if r.path and test_name in r.path
+            ]
         self.logger.debug(
             f"Count of recorded requests for test: {len(recorded_requests)}"
         )
@@ -544,10 +477,13 @@ class MockServerFriendlyClient(object):
         if len(exceptions) > 0:
             raise MockServerVerifyException(exceptions=exceptions, files=files)
 
-    def retrieve(self) -> List[Dict[str, Any]]:
+    def retrieve_requests(self) -> List[MockRequest]:
         result = self._call("retrieve")
         # https://app.swaggerhub.com/apis/jamesdbloom/mock-server-openapi/5.11.x#/control/put_retrieve
-        return cast(List[Dict[str, Any]], json.loads(result.text))
+        raw_requests: List[Dict[str, Any]] = cast(
+            List[Dict[str, Any]], json.loads(result.text)
+        )
+        return [MockRequest(request=r) for r in raw_requests]
 
     @staticmethod
     def normalize_querystring_params(
