@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, cast
 from urllib.parse import parse_qs
 
 
@@ -13,37 +13,13 @@ class MockRequest:
         )
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
 
-        raw_body = self.request.get("body")
-        self.body_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
-            raw_body.decode("utf-8")  # type: ignore
-            if isinstance(raw_body, bytes)
-            else json.loads(raw_body)
-            if isinstance(raw_body, str)
-            else MockRequest.convert_query_parameters_to_dict(raw_body["string"])
-            if raw_body
-            and "string" in raw_body
-            and self.headers
-            and self.headers.get("Content-Type")
-            == ["application/x-www-form-urlencoded"]
-            else raw_body
+        raw_body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]] = cast(
+            Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+            self.request.get("body"),
         )
-        assert (
-            self.body_content is None
-            or isinstance(self.body_content, dict)
-            or isinstance(self.body_content, list)
-        ), f"{type(self.body_content)}: {json.dumps(self.body_content)}"
-        if isinstance(self.body_content, list):
-            for json_item in self.body_content:
-                assert isinstance(
-                    json_item, dict
-                ), f"{type(json_item)}: {json.dumps(json_item)}"
 
-        self.body_list: Optional[List[Dict[str, Any]]] = (
-            self.body_content
-            if isinstance(self.body_content, list)
-            else [self.body_content]
-            if self.body_content
-            else None
+        self.body_list: Optional[List[Dict[str, Any]]] = MockRequest.parse_body(
+            body=raw_body, headers=self.headers
         )
 
         assert self.body_list is None or isinstance(
@@ -84,6 +60,46 @@ class MockRequest:
         assert self.json_list is None or isinstance(
             self.json_list, list
         ), f"{type(self.json_list)}: {json.dumps(self.json_list)}"
+
+    @staticmethod
+    def parse_body(
+        *,
+        body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+        headers: Optional[Dict[str, Any]],
+    ) -> Optional[List[Dict[str, Any]]]:
+        # body can be either:
+        # 0. None
+        # 1. bytes (UTF-8 encoded)
+        # 2. str (form encoded)
+        # 3. str (json)
+        # 3. dict
+        # 4. list of string
+        # 5. list of dict
+
+        if body is None:
+            return None
+
+        if isinstance(body, bytes):
+            return MockRequest.parse_body(body=body.decode("utf-8"), headers=headers)
+
+        if isinstance(body, str):
+            return MockRequest.parse_body(body=json.loads(body), headers=headers)
+
+        if isinstance(body, dict):
+            if (
+                body
+                and "string" in body
+                and headers
+                and headers.get("Content-Type") == ["application/x-www-form-urlencoded"]
+            ):
+                return [MockRequest.convert_query_parameters_to_dict(body["string"])]
+            else:
+                return [body]
+
+        if isinstance(body, list):
+            return body
+
+        assert False, f"body is in unexpected type: {type(body)}"
 
     def __str__(self) -> str:
         return (
