@@ -12,6 +12,12 @@ class MockServerVerifyException(Exception):
     def __init__(
         self, exceptions: List[MockServerException], files: Optional[List[str]] = None
     ) -> None:
+        """
+        Exception when mock server found the mismatch
+
+        :param exceptions:
+        :param files:
+        """
         super().__init__()
         self.exceptions: List[MockServerException] = exceptions
         self.files: List[str] = files or []

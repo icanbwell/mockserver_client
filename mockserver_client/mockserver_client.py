@@ -31,10 +31,17 @@ from .mockserver_verify_exception import MockServerVerifyException
 
 class MockServerFriendlyClient(object):
     """
-    from https://pypi.org/project/mockserver-friendly-client/
+    Client for the MockServer
+    Based on https://pypi.org/project/mockserver-friendly-client/
     """
 
     def __init__(self, base_url: str) -> None:
+        """
+        Client for the MockServer
+        Based on https://pypi.org/project/mockserver-friendly-client/
+
+        :param base_url: base url to use
+        """
         self.base_url: str = base_url
         self.expectations: List[MockExpectation] = []
         self.logger: Logger = logging.getLogger("MockServerClient")
@@ -44,10 +51,20 @@ class MockServerFriendlyClient(object):
         return put("{}/{}".format(self.base_url, command), data=data)
 
     def clear(self, path: str) -> None:
+        """
+        Clear all data related to this path
+
+
+        :param path:
+        """
         self.expectations = []
         self._call("clear", json.dumps({"path": path}))
 
     def reset(self) -> None:
+        """
+        Clear all data in the MockServer
+
+        """
         self.expectations = []
         self._call("reset")
 
@@ -58,6 +75,15 @@ class MockServerFriendlyClient(object):
         timing: Any = None,
         time_to_live: Any = None,
     ) -> None:
+        """
+        Create an expectation in mock server
+
+
+        :param request1: mock request
+        :param response1: mock response
+        :param timing: how many times to expect the request
+        :param time_to_live:
+        """
         self._call(
             "expectation",
             json.dumps(
@@ -77,6 +103,15 @@ class MockServerFriendlyClient(object):
         timing: _Timing,
         time_to_live: Any = None,
     ) -> None:
+        """
+        Expect this mock request and reply with the provided mock response
+
+
+        :param request1: mock request
+        :param response1: mock response
+        :param timing: how many times to expect the request
+        :param time_to_live:
+        """
         self.stub(request1, response1, timing, time_to_live)
         self.expectations.append(
             MockExpectation(request=request1, response=response1, timing=timing)
@@ -90,7 +125,14 @@ class MockServerFriendlyClient(object):
         add_file_name: bool = False,
     ) -> List[str]:
         """
-        Expects the files as requests
+        Read the files in the specified folder and create mock requests for each file
+
+
+        :param folder: folder to read the files from
+        :param url_prefix: url_prefix to use when mocking requests
+        :param content_type: content type to use for requests
+        :param add_file_name: whether to add the file name to the url
+        :return: list of files read
         """
         file_path: str
         files: List[str] = sorted(
@@ -142,7 +184,14 @@ class MockServerFriendlyClient(object):
         add_file_name: bool = False,
     ) -> List[str]:
         """
-        Expects the files as requests
+        Read the files in the specified folder and create mock requests for each file
+
+
+        :param folder: folder to read the files from
+        :param path: url_prefix to use when mocking requests
+        :param json_response_body: mock response body to return for each mock request
+        :param add_file_name: whether to add the file name to the url
+        :return: list of files read
         """
         file_path: str
         files: List[str] = sorted(
@@ -168,6 +217,11 @@ class MockServerFriendlyClient(object):
     def expect_default(
         self,
     ) -> None:
+        """
+        Fallback handler for all requests
+
+
+        """
         response1: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
@@ -186,7 +240,7 @@ class MockServerFriendlyClient(object):
         4. There was a matching request and expectation and the content matched -> nothing to do
 
 
-        :param recorded_requests:
+        :param recorded_requests: list of requests actually made to the mock server
         :return: list of match exceptions
         """
         exceptions: List[MockServerException] = []
@@ -273,10 +327,10 @@ class MockServerFriendlyClient(object):
         Throws a JsonContentMismatchException if a url match was found but no body match was found
 
 
-        :param expected_request:
-        :param recorded_requests:
-        :param unmatched_requests:
-        :return:
+        :param expected_request: request that was expected
+        :param recorded_requests: list of all requests made
+        :param unmatched_requests: list of requests that have not been matched to an expectation
+        :return: whether a matching expectation was found
         """
         found_expectation: bool = False
         recorded_request: MockRequest
@@ -341,10 +395,11 @@ class MockServerFriendlyClient(object):
         """
         Matches on both request and body and returns whether it was able to find a match
 
-        :param expected_request:
-        :param recorded_requests:
-        :param unmatched_requests:
-        :return:
+
+        :param expected_request: request that was expected
+        :param recorded_requests: list of all requests made
+        :param unmatched_requests: list of requests that have not been matched to an expectation
+        :return: whether a matching expectation was found
         """
         # first try to find all exact matches on both request url and body
         found_expectation: bool = False
@@ -378,6 +433,14 @@ class MockServerFriendlyClient(object):
     def does_request_match(
         request1: MockRequest, request2: MockRequest, check_body: bool
     ) -> bool:
+        """
+        Does request1 match request2
+
+        :param request1: request 1
+        :param request2: request 2
+        :param check_body: whether to match the body or not
+        :return: whether the two requests match
+        """
         return (
             request1.method == request2.method
             and request1.path == request2.path
@@ -400,6 +463,14 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
+        """
+        Does the body of the two specified requests match
+
+        :param request1: request 1
+        :param request2: request 2
+        :return: whether the body of the two specified requests match
+        :rtype:
+        """
         if not request1.body_list and not request2.body_list:
             return True
         if request1.body_list and not request2.body_list:
@@ -412,6 +483,14 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_id_in_request_match(request1: MockRequest, request2: MockRequest) -> bool:
+        """
+        Whether the id in the two specified requests match.
+
+
+        :param request1: request 1
+        :param request2: request 2
+        :return: Whether the id in the two specified requests match.
+        """
         json1_list: Optional[List[Dict[str, Any]]] = request1.json_list
         json2_list: Optional[List[Dict[str, Any]]] = request2.json_list
 
@@ -431,6 +510,13 @@ class MockServerFriendlyClient(object):
         actual_body_list: Optional[List[Dict[str, Any]]],
         expected_body_list: Optional[List[Dict[str, Any]]],
     ) -> None:
+        """
+        Compares the bodies of the two requests and raises an exception with detailed diff if they don't match
+
+
+        :param actual_body_list: body of actual request
+        :param expected_body_list: body of expected request
+        """
         differences = list(dictdiffer.diff(expected_body_list, actual_body_list))
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
@@ -445,6 +531,12 @@ class MockServerFriendlyClient(object):
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
     ) -> None:
+        """
+        Compares the JSON bodies of the two requests and raises an exception with detailed diff if they don't match
+
+        :param actual_json: json of actual request
+        :param expected_json: json of expected request
+        """
         differences = list(dictdiffer.diff(expected_json, actual_json))
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
@@ -457,6 +549,13 @@ class MockServerFriendlyClient(object):
     def verify_expectations(
         self, test_name: Optional[str] = None, files: Optional[List[str]] = None
     ) -> None:
+        """
+        Verify that the requests made match the expectations.  Raises exceptions if there are mismatches
+
+
+        :param test_name: Name of test
+        :param files: files to create expectations
+        """
         recorded_requests: List[MockRequest] = self.retrieve_requests()
         self.logger.debug(f"Count of retrieved requests: {len(recorded_requests)}")
         self.logger.debug("-------- All Retrieved Requests -----")
@@ -478,6 +577,12 @@ class MockServerFriendlyClient(object):
             raise MockServerVerifyException(exceptions=exceptions, files=files)
 
     def retrieve_requests(self) -> List[MockRequest]:
+        """
+        Retrieve requests made to mock server
+
+
+        :return: list of requests made to mock server
+        """
         result = self._call("retrieve")
         # https://app.swaggerhub.com/apis/jamesdbloom/mock-server-openapi/5.11.x#/control/put_retrieve
         raw_requests: List[Dict[str, Any]] = cast(
@@ -491,7 +596,7 @@ class MockServerFriendlyClient(object):
     ) -> Optional[Dict[str, Any]]:
         """
         ensure a dictionary of querystring params is formatted so that the param name is the dictionary key.
-        querystring dictionaries from requests sometimes look like this. dont want that.
+        querystring dictionaries from requests sometimes look like this. don't want that.
         "queryStringParameters": [
             {
                 "name": "contained",
@@ -527,6 +632,22 @@ def mock_request(
     headers: Optional[Dict[str, Any]] = None,
     cookies: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """
+    Mocks a request
+
+
+    :param method: method of request
+    :param path: path of request (No query strings in path.  Use the querystring parameter)
+    :param querystring: dict of query strings
+    :param body: body to expect in the request
+    :param headers: headers to expect in the request
+    :param cookies: cookies to expect in the request
+    :return: mock request
+    """
+    assert (
+        not path or "?" not in path
+    ), "Do not specify query string in the path.  Use the querystring parameter"
+
     return _non_null_options_to_dict(
         _Option("method", method),
         _Option("path", path),
@@ -545,6 +666,18 @@ def mock_response(
     delay: Optional[str] = None,
     reason: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """
+    Specifies the mock response for a mock request
+
+
+    :param code: code to return in mock response
+    :param body: body to return in mock response
+    :param headers: headers to return in mock response
+    :param cookies: cookies to return in mock response
+    :param delay: delay to use before returning response
+    :param reason: reason phrase to return in mock response
+    :return: mock response
+    """
     return _non_null_options_to_dict(
         _Option("statusCode", code),
         _Option("reasonPhrase", reason),
@@ -556,14 +689,33 @@ def mock_response(
 
 
 def times(count: int) -> _Timing:
+    """
+    How many times to expect the request
+
+
+    :param count: count
+    :return: Timing object
+    """
     return _Timing(count)
 
 
 def times_once() -> _Timing:
+    """
+    Expect the request a single time
+
+
+    :return: Timing object
+    """
     return _Timing(1)
 
 
 def times_any() -> _Timing:
+    """
+    Expect the request unlimited number of times
+
+
+    :return: Timing object
+    """
     return _Timing()
 
 
@@ -575,14 +727,24 @@ def form(form1: Any) -> Dict[str, Any]:
 
 
 def json_equals(payload: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Any]:
-    """Expects that the request payload is equal to the given payload."""
+    """
+    Expects that the request payload is equal to the given payload.
+
+    :param payload: json to compare to
+    :return:
+    """
     return collections.OrderedDict(
         (("type", "JSON"), ("json", json.dumps(payload)), ("matchType", "STRICT"))
     )
 
 
 def text_equals(payload: str) -> Dict[str, Any]:
-    """Expects that the request payload is equal to the given payload."""
+    """
+    Expects that the request payload is equal to the given payload.
+
+    :param payload: text to compare to
+    :return:
+    """
     return collections.OrderedDict(
         (
             ("type", "STRING"),
@@ -593,7 +755,13 @@ def text_equals(payload: str) -> Dict[str, Any]:
 
 
 def json_contains(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Expects the request payload to match all given fields. The request may has more fields."""
+    """
+    Expects the request payload to match all given fields. The request may have more fields.
+
+
+    :param payload: returned json must include this
+    :return:
+    """
     return collections.OrderedDict(
         (
             ("type", "JSON"),
@@ -606,6 +774,15 @@ def json_contains(payload: Dict[str, Any]) -> Dict[str, Any]:
 def json_response(
     body: Any = None, headers: Any = None, **kwargs: Any
 ) -> Dict[str, Any]:
+    """
+    Expect this json response
+
+
+    :param body:
+    :param headers:
+    :param kwargs:
+    :return:
+    """
     headers = headers or {}
     headers["Content-Type"] = "application/json"
     return mock_response(body=json.dumps(body), headers=headers, **kwargs)

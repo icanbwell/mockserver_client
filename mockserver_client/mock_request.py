@@ -5,6 +5,11 @@ from urllib.parse import parse_qs
 
 class MockRequest:
     def __init__(self, request: Dict[str, Any]) -> None:
+        """
+        Class for mock requests
+
+        :param request:
+        """
         self.request: Dict[str, Any] = request
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")

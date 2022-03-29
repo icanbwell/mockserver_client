@@ -8,6 +8,13 @@ class MockExpectation:
     def __init__(
         self, request: Dict[str, Any], response: Dict[str, Any], timing: _Timing
     ) -> None:
+        """
+        Class for Expectation
+
+        :param request: request
+        :param response: response
+        :param timing: timing
+        """
         self.request: MockRequest = MockRequest(request)
         self.response: Dict[str, Any] = response
         self.timing: _Timing = timing
