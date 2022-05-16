@@ -6,7 +6,6 @@ import string
 import random
 from typing import Any, Dict, List, Optional, Union
 
-import dictdiffer  # type: ignore
 from requests import put, Response
 
 from ._time import _Time
@@ -83,9 +82,9 @@ class MockServerFriendlyClientIdx(object):
 
 
 def mock_response_get_doctor(
-    code: Optional[int] = None,
-    cookies: Optional[str] = None,
-    reason: Optional[str] = None,
+        code: Optional[int] = None,
+        cookies: Optional[str] = None,
+        reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -114,9 +113,9 @@ def mock_response_get_doctor(
 
 
 def mock_response_post_is_physician_recommended(
-    code: Optional[int] = None,
-    cookies: Optional[str] = None,
-    reason: Optional[str] = None,
+        code: Optional[int] = None,
+        cookies: Optional[str] = None,
+        reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -185,6 +184,7 @@ def _to_time(value: Union[_Time, int]) -> _Time:
     if not isinstance(value, _Time):
         value = seconds(value)
     return value
+
 
 def _to_time_to_live(time: Union[_Time, int]) -> Dict[str, Any]:
     time = _to_time(time)
