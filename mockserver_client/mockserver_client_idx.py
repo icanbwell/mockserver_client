@@ -53,11 +53,11 @@ class MockServerFriendlyClientIdx(object):
         self._call("reset")
 
     def stub(
-            self,
-            request1: Any,
-            response1: Any,
-            timing: Any = None,
-            time_to_live: Any = None,
+        self,
+        request1: Any,
+        response1: Any,
+        timing: Any = None,
+        time_to_live: Any = None,
     ) -> None:
         """
         Create an expectation in mock server
@@ -82,9 +82,9 @@ class MockServerFriendlyClientIdx(object):
 
 
 def mock_response_get_doctor(
-        code: Optional[int] = None,
-        cookies: Optional[str] = None,
-        reason: Optional[str] = None,
+    code: Optional[int] = None,
+    cookies: Optional[str] = None,
+    reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -99,9 +99,13 @@ def mock_response_get_doctor(
     :return: mock response
     """
     body = {
-        'name': ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-        'practice_location': ''.join(random.choice(string.ascii_uppercase) for _ in range(8)),
-        'doctor_md': ''.join(random.choice(string.digits) for _ in range(10)),
+        "name": "".join(
+            random.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+        ),
+        "practice_location": "".join(
+            random.choice(string.ascii_uppercase) for _ in range(8)
+        ),
+        "doctor_md": "".join(random.choice(string.digits) for _ in range(10)),
     }
 
     return _non_null_options_to_dict(
@@ -113,9 +117,9 @@ def mock_response_get_doctor(
 
 
 def mock_response_post_is_physician_recommended(
-        code: Optional[int] = None,
-        cookies: Optional[str] = None,
-        reason: Optional[str] = None,
+    code: Optional[int] = None,
+    cookies: Optional[str] = None,
+    reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -129,9 +133,7 @@ def mock_response_post_is_physician_recommended(
     :param reason: reason phrase to return in mock response
     :return: mock response
     """
-    body = {
-        'is_recommended': 'true'
-    }
+    body = {"is_recommended": "true"}
 
     return _non_null_options_to_dict(
         _Option("statusCode", code),
