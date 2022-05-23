@@ -1,90 +1,54 @@
 import json
-import logging
-import os
-from logging import Logger
 import string
 import random
-from typing import Any, Dict, List, Optional, Union
-
-from requests import put, Response
+from typing import Any, Dict, Optional, Union
 
 from ._time import _Time
 from ._timing import _Timing
-from .mock_expectation import MockExpectation
 
 
-class MockServerFriendlyClientIdx(object):
+def reset(self) -> None:
     """
-    Client for the MockServer
-    Based on https://pypi.org/project/mockserver-friendly-client/
+    Clear all data in the MockServer
+
     """
-
-    def __init__(self, base_url: str) -> None:
-        """
-        Client for the MockServer
-        Based on https://pypi.org/project/mockserver-friendly-client/
-
-        :param base_url: base url to use
-        """
-        self.base_url: str = base_url
-        self.expectations: List[MockExpectation] = []
-        self.logger: Logger = logging.getLogger("MockServerClient")
-        self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
-
-    def _call(self, command: str, data: Any = None) -> Response:
-        return put("{}/{}".format(self.base_url, command), data=data)
-
-    def clear(self, path: str) -> None:
-        """
-        Clear all data related to this path
+    self.expectations = []
+    self._call("reset")
 
 
-        :param path:
-        """
-        self.expectations = []
-        self._call("clear", json.dumps({"path": path}))
-
-    def reset(self) -> None:
-        """
-        Clear all data in the MockServer
-
-        """
-        self.expectations = []
-        self._call("reset")
-
-    def stub(
+def stub(
         self,
         request1: Any,
         response1: Any,
         timing: Any = None,
         time_to_live: Any = None,
-    ) -> None:
-        """
-        Create an expectation in mock server
+) -> None:
+    """
+    Create an expectation in mock server
 
 
-        :param request1: mock request
-        :param response1: mock response
-        :param timing: how many times to expect the request
-        :param time_to_live:
-        """
-        self._call(
-            "expectation",
-            json.dumps(
-                _non_null_options_to_dict(
-                    _Option("httpRequest", request1),
-                    _Option("httpResponse", response1),
-                    _Option("times", (timing or _Timing()).for_expectation()),
-                    _Option("timeToLive", time_to_live, formatter=_to_time_to_live),
-                )
-            ),
-        )
+    :param request1: mock request
+    :param response1: mock response
+    :param timing: how many times to expect the request
+    :param time_to_live:
+    """
+    self._call(
+        "expectation",
+        json.dumps(
+            _non_null_options_to_dict(
+                _Option("httpRequest", request1),
+                _Option("httpResponse", response1),
+                _Option("times", (timing or _Timing()).for_expectation()),
+                _Option("timeToLive", time_to_live, formatter=_to_time_to_live),
+            )
+        ),
+    )
 
 
 def mock_response_get_doctor(
-    code: Optional[int] = None,
-    cookies: Optional[str] = None,
-    reason: Optional[str] = None,
+        code: Optional[int] = None,
+        cookies: Optional[str] = None,
+        reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -117,9 +81,9 @@ def mock_response_get_doctor(
 
 
 def mock_response_post_is_physician_recommended(
-    code: Optional[int] = None,
-    cookies: Optional[str] = None,
-    reason: Optional[str] = None,
+        code: Optional[int] = None,
+        cookies: Optional[str] = None,
+        reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
