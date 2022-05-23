@@ -1,27 +1,18 @@
 import json
 import string
 import random
+from requests import put, Response
 from typing import Any, Dict, Optional, Union
 
 from ._time import _Time
 from ._timing import _Timing
 
 
-def reset(self) -> None:
-    """
-    Clear all data in the MockServer
-
-    """
-    self.expectations = []
-    self._call("reset")
-
-
 def stub(
-        self,
-        request1: Any,
-        response1: Any,
-        timing: Any = None,
-        time_to_live: Any = None,
+    request1: Any,
+    response1: Any,
+    timing: Any = None,
+    time_to_live: Any = None,
 ) -> None:
     """
     Create an expectation in mock server
@@ -32,7 +23,7 @@ def stub(
     :param timing: how many times to expect the request
     :param time_to_live:
     """
-    self._call(
+    _call(
         "expectation",
         json.dumps(
             _non_null_options_to_dict(
@@ -45,10 +36,14 @@ def stub(
     )
 
 
+def _call(base_url: str, command: str, data: Any = None) -> Response:
+    return put("{}/{}".format(base_url, command), data=data)
+
+
 def mock_response_get_doctor(
-        code: Optional[int] = None,
-        cookies: Optional[str] = None,
-        reason: Optional[str] = None,
+    code: Optional[int] = None,
+    cookies: Optional[str] = None,
+    reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -81,9 +76,9 @@ def mock_response_get_doctor(
 
 
 def mock_response_post_is_physician_recommended(
-        code: Optional[int] = None,
-        cookies: Optional[str] = None,
-        reason: Optional[str] = None,
+    code: Optional[int] = None,
+    cookies: Optional[str] = None,
+    reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
