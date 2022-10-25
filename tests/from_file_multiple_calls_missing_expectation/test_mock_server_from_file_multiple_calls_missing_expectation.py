@@ -60,5 +60,6 @@ def test_mock_server_from_file_multiple_calls_missing_expectation() -> None:
                 if isinstance(e1, MockServerRequestNotFoundException)
             ]
             assert len(request_not_found_exception) == 1
+            print(str(request_not_found_exception[0]))
             print(str(e))
             raise e
