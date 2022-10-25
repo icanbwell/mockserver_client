@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from mockserver_client.mockserver_client import (
-    MockServerFriendlyClient,
     mock_request,
-    json_equals,
     mock_response,
+    MockServerFriendlyClient,
+    json_equals,
     times,
     text_equals,
 )
@@ -85,7 +85,11 @@ def mock_single_request(
         path = (
             f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/1/$merge"
         )
-        payload: str = json.dumps([{"id": id_, "updated": False, "created": True}])
+        payload: str = (
+            json.dumps([{"id": id_, "updated": False, "created": True}])
+            if not response_body
+            else response_body
+        )
         mock_client.expect(
             mock_request(
                 method="POST",
