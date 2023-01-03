@@ -24,6 +24,7 @@ from mockserver_client.exceptions.mock_server_request_not_found_exception import
 )
 from ._time import _Time
 from ._timing import _Timing
+from .match_request_result import MatchRequestResult
 from .mock_expectation import MockExpectation
 from .mock_request import MockRequest
 from .mockserver_verify_exception import MockServerVerifyException
@@ -230,7 +231,7 @@ class MockServerFriendlyClient(object):
     def match_to_recorded_requests(
         self,
         recorded_requests: List[MockRequest],
-    ) -> List[MockServerException]:
+    ) -> MatchRequestResult:
         """
         Matches recorded requests with expected requests
         There are 4 cases possible:
@@ -270,10 +271,11 @@ class MockServerFriendlyClient(object):
                 for j in json1_id_list:
                     recorded_request_ids.append(j)
 
+        found_expectations: List[MockRequest] = []
         # now try to match requests to expectations
         for expectation in self.expectations:
             expected_request = expectation.request
-            found_expectation: bool = False
+            found_expectation: Optional[MockRequest] = None
             try:
                 found_expectation = self.find_matches_on_request_and_body(
                     expected_request=expected_request,
@@ -286,6 +288,8 @@ class MockServerFriendlyClient(object):
                         recorded_requests=recorded_requests,
                         unmatched_requests=unmatched_requests,
                     )
+                if found_expectation:
+                    found_expectations.append(found_expectation)
             except MockServerJsonContentMismatchException as e:
                 exceptions.append(e)
             if not found_expectation and expected_request.method:
@@ -315,7 +319,9 @@ class MockServerFriendlyClient(object):
                     json_list=unmatched_request.json_list,
                 )
             )
-        return exceptions
+        return MatchRequestResult(
+            exceptions=exceptions, found_expectations=found_expectations
+        )
 
     def find_matches_on_request_url_only(
         self,
@@ -323,7 +329,7 @@ class MockServerFriendlyClient(object):
         expected_request: MockRequest,
         recorded_requests: List[MockRequest],
         unmatched_requests: List[MockRequest],
-    ) -> bool:
+    ) -> Optional[MockRequest]:
         """
         Finds matches on url only and then compares the bodies.  Returns if match was found.
         Throws a JsonContentMismatchException if a url match was found but no body match was found
@@ -334,7 +340,7 @@ class MockServerFriendlyClient(object):
         :param unmatched_requests: list of requests that have not been matched to an expectation
         :return: whether a matching expectation was found
         """
-        found_expectation: bool = False
+        found_expectation: Optional[MockRequest] = None
         recorded_request: MockRequest
         for recorded_request in recorded_requests:
             if expected_request.method and self.does_request_match(
@@ -354,7 +360,7 @@ class MockServerFriendlyClient(object):
                 #         check_body=False,
                 #     )
                 # ]
-                found_expectation = True
+                found_expectation = recorded_request
                 # remove request from unmatched_requests
                 unmatched_request_list = [
                     r
@@ -393,7 +399,7 @@ class MockServerFriendlyClient(object):
         expected_request: MockRequest,
         recorded_requests: List[MockRequest],
         unmatched_requests: List[MockRequest],
-    ) -> bool:
+    ) -> Optional[MockRequest]:
         """
         Matches on both request and body and returns whether it was able to find a match
 
@@ -404,7 +410,7 @@ class MockServerFriendlyClient(object):
         :return: whether a matching expectation was found
         """
         # first try to find all exact matches on both request url and body
-        found_expectation: bool = False
+        found_expectation: Optional[MockRequest] = None
         for recorded_request in recorded_requests:
             # first try to match on both request url AND body
             # If match is found then remove this request from list of unmatched requests
@@ -413,7 +419,7 @@ class MockServerFriendlyClient(object):
                 request2=recorded_request,
                 check_body=True,
             ):
-                found_expectation = True
+                found_expectation = recorded_request
                 # remove request from unmatched_requests
                 unmatched_request_list = [
                     r
@@ -572,11 +578,22 @@ class MockServerFriendlyClient(object):
         self.logger.debug(
             f"Count of recorded requests for test: {len(recorded_requests)}"
         )
-        exceptions: List[MockServerException] = self.match_to_recorded_requests(
+        match_result: MatchRequestResult = self.match_to_recorded_requests(
             recorded_requests=recorded_requests
         )
+        exceptions: List[MockServerException] = match_result.exceptions
+        found_expectations: List[MockRequest] = match_result.found_expectations
+
         if len(exceptions) > 0:
-            raise MockServerVerifyException(exceptions=exceptions, files=files)
+            self.logger.info("-------- Matched Retrieved Requests -----")
+            for found_expectation in found_expectations:
+                self.logger.info(f"{found_expectation}")
+            self.logger.info("-------- End Matched Retrieved Requests -----")
+            raise MockServerVerifyException(
+                exceptions=exceptions,
+                files=files,
+                found_expectations=found_expectations,
+            )
 
     def retrieve_requests(self) -> List[MockRequest]:
         """

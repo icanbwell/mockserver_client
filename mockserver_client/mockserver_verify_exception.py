@@ -6,11 +6,15 @@ from .exceptions.mock_server_exception import MockServerException
 from .exceptions.mock_server_json_content_mismatch_exception import (
     MockServerJsonContentMismatchException,
 )
+from .mock_request import MockRequest
 
 
 class MockServerVerifyException(Exception):
     def __init__(
-        self, exceptions: List[MockServerException], files: Optional[List[str]] = None
+        self,
+        exceptions: List[MockServerException],
+        found_expectations: List[MockRequest],
+        files: Optional[List[str]] = None,
     ) -> None:
         """
         Exception when mock server found the mismatch
@@ -20,6 +24,7 @@ class MockServerVerifyException(Exception):
         """
         super().__init__()
         self.exceptions: List[MockServerException] = exceptions
+        self.found_expectations: List[MockRequest] = found_expectations
         self.files: List[str] = files or []
         self.set_files_in_exceptions()
 
