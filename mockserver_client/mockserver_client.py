@@ -299,6 +299,7 @@ class MockServerFriendlyClient(object):
         for unmatched_expectation in unmatched_expectation_requests:
             exceptions.append(
                 MockServerExpectationNotFoundException(
+                    method=unmatched_expectation.method,
                     url=unmatched_expectation.path,
                     json_list=unmatched_expectation.json_list,
                     querystring_params=unmatched_expectation.querystring_params,
@@ -310,6 +311,7 @@ class MockServerFriendlyClient(object):
                 MockServerRequestNotFoundException(
                     method=unmatched_request.method,
                     url=unmatched_request.path,
+                    querystring_params=unmatched_request.querystring_params,
                     json_list=unmatched_request.json_list,
                 )
             )
