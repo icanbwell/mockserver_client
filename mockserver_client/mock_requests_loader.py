@@ -86,7 +86,16 @@ def mock_single_request(
             f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/1/$merge"
         )
         payload: str = (
-            json.dumps([{"id": id_, "updated": False, "created": True}])
+            json.dumps(
+                [
+                    {
+                        "id": id_,
+                        "updated": False,
+                        "created": True,
+                        "resourceType": resourceType,
+                    }
+                ]
+            )
             if not response_body
             else response_body
         )
