@@ -307,6 +307,7 @@ class MockServerFriendlyClient(object):
                     url=unmatched_expectation.path,
                     json_list=unmatched_expectation.json_list,
                     querystring_params=unmatched_expectation.querystring_params,
+                    expectation=unmatched_expectation,
                 )
             )
         # and for every request in unmatched_requests
@@ -317,6 +318,7 @@ class MockServerFriendlyClient(object):
                     url=unmatched_request.path,
                     querystring_params=unmatched_request.querystring_params,
                     json_list=unmatched_request.json_list,
+                    request=unmatched_request,
                 )
             )
         return MatchRequestResult(
@@ -847,7 +849,10 @@ def _non_null_options_to_dict(*options: Any) -> Dict[str, Any]:
 
 
 def _to_named_values_list(dictionary: Dict[str, Any]) -> List[Dict[str, Any]]:
-    return [{"name": key, "values": [value]} for key, value in dictionary.items()]
+    return [
+        {"name": key, "values": [value] if not isinstance(value, list) else value}
+        for key, value in dictionary.items()
+    ]
 
 
 def _to_time(value: Union[_Time, int]) -> _Time:
