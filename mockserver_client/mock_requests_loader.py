@@ -357,16 +357,23 @@ def load_mock_source_api_json_responses(
                 if url_suffix:
                     path = f"{path}/{url_suffix}"
 
+            code: Optional[int] = None
             try:
                 request_result = content["request_result"]
+                if "statusCode" in request_result:
+                    code = request_result["statusCode"]
+
             except ValueError:
                 raise Exception(
-                    "`request_result` key not found. It is supposed to contain the expected result of the requst function."
+                    "`request_result` key not found. "
+                    + "It is supposed to contain the expected result of the request function."
                 )
 
             mock_client.expect(
                 mock_request(path=path, **request_parameters),
-                mock_response(body=json.dumps(request_result)),
+                mock_response(body=json.dumps(request_result))
+                if not code
+                else mock_response(code=code),
                 timing=times(1),
             )
             print(f"Mocking {mock_client.base_url}{path}: {request_parameters}")

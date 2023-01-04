@@ -108,3 +108,10 @@ class MockRequest:
     def convert_query_parameters_to_dict(query: str) -> Dict[str, str]:
         params: Dict[str, List[str]] = parse_qs(query)
         return {k: v[0] for k, v in params.items()}
+
+    def matches_without_body(self, other: "MockRequest") -> bool:
+        return (
+            self.method == other.method
+            and self.path == other.path
+            and self.querystring_params == other.querystring_params
+        )
