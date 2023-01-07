@@ -33,6 +33,10 @@ class MockRequest:
 
         raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
             self.body_list[0].get("json")
+            if self.body_list is not None
+            and len(self.body_list) > 0
+            and "json" in self.body_list[0]
+            else self.body_list
             if self.body_list is not None and len(self.body_list) > 0
             else None
         )
