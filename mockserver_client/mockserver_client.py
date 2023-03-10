@@ -488,7 +488,10 @@ class MockServerFriendlyClient(object):
         if request2.body_list and not request1.body_list:
             return False
         if request1.json_list and request2.json_list:
-            return True if request1.json_list == request2.json_list else False
+            comparison_results = list(
+                dictdiffer.diff(request1.json_list, request2.json_list)
+            )
+            return True if len(comparison_results) == 0 else False
         return True if request1.body_list == request2.body_list else False
 
     @staticmethod

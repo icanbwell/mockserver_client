@@ -27,9 +27,108 @@ def test_mock_server_inline_json_order() -> None:
             method="POST",
             body={
                 "json": {
-                    "client_id": "unitypoint_bwell",
-                    "client_secret": "fake_client_secret",
-                    "grant_type": "client_credentials",
+                    "resourceType": "Coverage",
+                    "id": "aetna-sandbox-3456789012345670303",
+                    "meta": {
+                        "source": "http://mock-server:1080/test_patient_access_pipeline/source/4_0_0/Coverage/3456789012345670303",
+                        "security": [
+                            {
+                                "system": "https://www.icanbwell.com/owner",
+                                "code": "aetna_sandbox",
+                            },
+                            {
+                                "system": "https://www.icanbwell.com/access",
+                                "code": "aetna_sandbox",
+                            },
+                            {
+                                "system": "https://www.icanbwell.com/vendor",
+                                "code": "aetna_sandbox",
+                            },
+                            {
+                                "system": "https://www.icanbwell.com/connectionType",
+                                "code": "proa",
+                            },
+                        ],
+                    },
+                    "identifier": [
+                        {
+                            "type": {
+                                "coding": [
+                                    {
+                                        "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                        "code": "SN",
+                                    }
+                                ]
+                            },
+                            "system": "https://sources.aetna.com/coverage/identifier/membershipid/59",
+                            "value": "435679010300+AE303+2021-01-01",
+                        }
+                    ],
+                    "status": "active",
+                    "type": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                                "code": "PPO",
+                                "display": "preferred provider organization policy",
+                            }
+                        ]
+                    },
+                    "policyHolder": {
+                        "reference": "Patient/aetna-sandbox-1234567890123456703",
+                        "type": "Patient",
+                    },
+                    "subscriber": {
+                        "reference": "Patient/aetna-sandbox-1234567890123456703",
+                        "type": "Patient",
+                    },
+                    "subscriberId": "435679010300",
+                    "beneficiary": {
+                        "reference": "Patient/aetna-sandbox-1234567890123456703",
+                        "type": "Patient",
+                    },
+                    "relationship": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                                "code": "self",
+                            }
+                        ]
+                    },
+                    "period": {"start": "2021-01-01", "end": "2021-12-31"},
+                    "payor": [
+                        {
+                            "reference": "Organization/aetna-sandbox-6667778889990000014",
+                            "type": "Organization",
+                            "display": "Aetna",
+                        }
+                    ],
+                    "class": [
+                        {
+                            "type": {
+                                "coding": [
+                                    {
+                                        "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                                        "code": "plan",
+                                        "display": "Plan",
+                                    }
+                                ]
+                            },
+                            "value": "AE303",
+                            "name": "Aetna Plan",
+                        }
+                    ],
+                    "network": "Medicare - MA/NY/NJ - Full Reciprocity",
+                    "costToBeneficiary": [
+                        {
+                            "type": {"text": "Annual Physical Exams NMC - In Network"},
+                            "valueQuantity": {
+                                "value": 50,
+                                "unit": "$",
+                                "system": "http://aetna.com/Medicare/CostToBeneficiary/ValueQuantity/code",
+                            },
+                        }
+                    ],
                 }
             },
         ),
@@ -49,9 +148,108 @@ def test_mock_server_inline_json_order() -> None:
     http.post(
         mock_server_url + "/" + test_name,
         json={
-            "client_id": "unitypoint_bwell",
-            "client_secret": "fake_client_secret",
-            "grant_type": "client_credentials",
+            "resourceType": "Coverage",
+            "id": "aetna-sandbox-3456789012345670303",
+            "meta": {
+                "source": "http://mock-server:1080/test_patient_access_pipeline/source/4_0_0/Coverage/3456789012345670303",
+                "security": [
+                    {
+                        "system": "https://www.icanbwell.com/owner",
+                        "code": "aetna_sandbox",
+                    },
+                    {
+                        "system": "https://www.icanbwell.com/access",
+                        "code": "aetna_sandbox",
+                    },
+                    {
+                        "system": "https://www.icanbwell.com/vendor",
+                        "code": "aetna_sandbox",
+                    },
+                    {
+                        "system": "https://www.icanbwell.com/connectionType",
+                        "code": "proa",
+                    },
+                ],
+            },
+            "status": "active",
+            "policyHolder": {
+                "reference": "Patient/aetna-sandbox-1234567890123456703",
+                "type": "Patient",
+            },
+            "subscriber": {
+                "reference": "Patient/aetna-sandbox-1234567890123456703",
+                "type": "Patient",
+            },
+            "beneficiary": {
+                "reference": "Patient/aetna-sandbox-1234567890123456703",
+                "type": "Patient",
+            },
+            "payor": [
+                {
+                    "reference": "Organization/aetna-sandbox-6667778889990000014",
+                    "type": "Organization",
+                    "display": "Aetna",
+                }
+            ],
+            "identifier": [
+                {
+                    "type": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                "code": "SN",
+                            }
+                        ]
+                    },
+                    "system": "https://sources.aetna.com/coverage/identifier/membershipid/59",
+                    "value": "435679010300+AE303+2021-01-01",
+                }
+            ],
+            "type": {
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                        "code": "PPO",
+                        "display": "preferred provider organization policy",
+                    }
+                ]
+            },
+            "subscriberId": "435679010300",
+            "relationship": {
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                        "code": "self",
+                    }
+                ]
+            },
+            "period": {"start": "2021-01-01", "end": "2021-12-31"},
+            "class": [
+                {
+                    "type": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                                "code": "plan",
+                                "display": "Plan",
+                            }
+                        ]
+                    },
+                    "value": "AE303",
+                    "name": "Aetna Plan",
+                }
+            ],
+            "network": "Medicare - MA/NY/NJ - Full Reciprocity",
+            "costToBeneficiary": [
+                {
+                    "type": {"text": "Annual Physical Exams NMC - In Network"},
+                    "valueQuantity": {
+                        "value": 50,
+                        "unit": "$",
+                        "system": "http://aetna.com/Medicare/CostToBeneficiary/ValueQuantity/code",
+                    },
+                }
+            ],
         },
     )
 
