@@ -13,7 +13,7 @@ services:
       - docker.env
 
   mock-server:
-    image: mockserver/mockserver:mockserver-5.14.0
+    image: mockserver/mockserver:mockserver-5.15.0
     command: -serverPort 1080
     ports:
       - '1080:1080'
