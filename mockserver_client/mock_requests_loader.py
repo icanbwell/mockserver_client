@@ -91,8 +91,11 @@ def load_mock_fhir_requests_for_single_file(
     :param url_prefix:
     :param response_body:
     """
+
     file_name: str
-    files: List[str] = sorted(glob(str(folder.joinpath(f"**/{single_file_name}")), recursive=True))
+    files: List[str] = sorted(
+        glob(str(folder.joinpath(f"**/{single_file_name}")), recursive=True)
+    )
     for file_name in files:
         # load file as json
         with open(file_name, "r") as file:
