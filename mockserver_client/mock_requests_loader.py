@@ -67,6 +67,53 @@ def load_mock_fhir_requests_from_folder(
     return files
 
 
+def load_mock_fhir_requests_for_single_file(
+    folder: Path,
+    single_file_name: str,
+    mock_client: MockServerFriendlyClient,
+    method: str = "POST",
+    relative_path: Optional[str] = None,
+    query_string: Optional[Dict[str, Any]] = None,
+    url_prefix: Optional[str] = None,
+    response_body: Optional[str] = None,
+) -> List[str]:
+    """
+    Loads a single .json file from the given folder
+
+    from https://pypi.org/project/mockserver-friendly-client/
+
+    :param folder: where to look for a given .json file
+    :param single_file_name: a single json file name
+    :param mock_client: client to mock server
+    :param method:
+    :param relative_path:
+    :param query_string:
+    :param url_prefix:
+    :param response_body:
+    """
+
+    file_name: str
+    files: List[str] = sorted(
+        glob(str(folder.joinpath(f"**/{single_file_name}")), recursive=True)
+    )
+    for file_name in files:
+        # load file as json
+        with open(file_name, "r") as file:
+            contents = json.loads(file.read())
+
+            mock_single_request(
+                fhir_request=contents,
+                method=method,
+                mock_client=mock_client,
+                relative_path=relative_path,
+                query_string=query_string,
+                url_prefix=url_prefix,
+                response_body=response_body,
+            )
+
+    return files
+
+
 def mock_single_request(
     fhir_request: Dict[str, Any],
     method: str,
