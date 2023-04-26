@@ -19,7 +19,7 @@ def load_mock_fhir_requests_from_folder(
     mock_client: MockServerFriendlyClient,
     method: str = "POST",
     relative_path: Optional[str] = None,
-    query_string: Optional[Dict[str, str]] = None,
+    query_string: Optional[Dict[str, Any]] = None,
     url_prefix: Optional[str] = None,
     response_body: Optional[str] = None,
 ) -> List[str]:
@@ -72,7 +72,7 @@ def mock_single_request(
     method: str,
     mock_client: MockServerFriendlyClient,
     relative_path: Optional[str],
-    query_string: Optional[Dict[str, str]],
+    query_string: Optional[Dict[str, Any]],
     url_prefix: Optional[str],
     response_body: Optional[str],
 ) -> None:
