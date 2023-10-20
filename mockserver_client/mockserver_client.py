@@ -28,6 +28,8 @@ from ._timing import _Timing
 from .match_request_result import MatchRequestResult
 from .mock_expectation import MockExpectation
 from .mock_request import MockRequest
+from .mock_request_response import MockRequestResponse
+from .mock_response import MockResponse
 from .mockserver_verify_exception import MockServerVerifyException
 
 
@@ -52,8 +54,13 @@ class MockServerFriendlyClient(object):
         self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
         self.log_all_requests_to_folder: str | Path | None = log_all_requests_to_folder
 
-    def _call(self, command: str, data: Any = None) -> Response:
-        return put("{}/{}".format(self.base_url, command), data=data)
+    def _call(
+        self, command: str, data: Any = None, query_string: Optional[str] = None
+    ) -> Response:
+        url = "{}/{}".format(self.base_url, command)
+        if query_string:
+            url += "?" + query_string
+        return put(url, data=data)
 
     def clear(self, path: str) -> None:
         """
@@ -622,9 +629,14 @@ class MockServerFriendlyClient(object):
         :param files: files to create expectations
         """
         recorded_requests: List[MockRequest] = self.retrieve_requests()
+        recorded_request_responses: List[
+            MockRequestResponse
+        ] = self.retrieve_request_responses()
         self.logger.debug(f"Count of retrieved requests: {len(recorded_requests)}")
         if self.log_all_requests_to_folder:
-            self.write_all_requests_to_folder(recorded_requests=recorded_requests)
+            self.write_all_requests_to_folder(
+                request_responses=recorded_request_responses
+            )
         self.logger.debug("-------- All Retrieved Requests -----")
         for recorded_request in recorded_requests:
             self.logger.debug(f"{recorded_request}")
@@ -668,6 +680,25 @@ class MockServerFriendlyClient(object):
         )
         return [MockRequest(request=r) for r in raw_requests]
 
+    def retrieve_request_responses(self) -> List[MockRequestResponse]:
+        """
+        Retrieve requests made to mock server
+
+
+        :return: list of requests made to mock server
+        """
+        result = self._call("retrieve", query_string="type=request_responses")
+        # https://app.swaggerhub.com/apis/jamesdbloom/mock-server-openapi/5.11.x#/control/put_retrieve
+        raw_requests: List[Dict[str, Any]] = cast(
+            List[Dict[str, Any]], json.loads(result.text)
+        )
+        return [
+            MockRequestResponse(
+                request=r.get("httpRequest"), response=r.get("httpResponse")
+            )
+            for r in raw_requests
+        ]
+
     @staticmethod
     def safe_string_for_file_path(s: str) -> str:
         # Replace spaces with underscores
@@ -690,31 +721,39 @@ class MockServerFriendlyClient(object):
         return s
 
     def write_all_requests_to_folder(
-        self, recorded_requests: List[MockRequest]
+        self, request_responses: List[MockRequestResponse]
     ) -> None:
         assert self.log_all_requests_to_folder
         # write all requests to file
-        for index, recorded_request1 in enumerate(recorded_requests):
+        recorded_request_response: MockRequestResponse
+        for index, recorded_request_response in enumerate(request_responses):
+            request: MockRequest | None = recorded_request_response.request
+            if not request:
+                continue
             json_dict: Dict[str, Any] = {
                 "request_parameters": {
-                    "method": f"{recorded_request1.method}",
-                    "path": recorded_request1.path,
+                    "method": f"{request.method}",
+                    "path": request.path,
                 }
             }
-            if recorded_request1.querystring_params:
+            if request.querystring_params:
                 json_dict["request_parameters"][
                     "querystring"
-                ] = recorded_request1.querystring_params
-            if recorded_request1.json_list:
-                json_dict["request_body"] = recorded_request1.json_list
+                ] = request.querystring_params
+            if request.json_list:
+                json_dict["request_body"] = request.json_list
+            response: MockResponse | None = recorded_request_response.response
+            if response:
+                if response.json_body:
+                    json_dict["request_result"] = response.json_body
+                elif response.status_code:
+                    json_dict["request_result"] = {"status_code": response.status_code}
 
-            json_content = json.dumps(json_dict)
-            # path_parts: List[str] = recorded_request1.path.split("/")
+            json_content = json.dumps(json_dict, indent=4)
+            # path_parts: List[str] = recorded_request_response.path.split("/")
             file_name: str = (
-                (
-                    f"{index}-{self.safe_string_for_file_path(recorded_request1.path)}.json"
-                )
-                if recorded_request1.path
+                f"{index}-{self.safe_string_for_file_path(request.path)}.json"
+                if request.path
                 else f"{index}.json"
             )
             path = Path(self.log_all_requests_to_folder)
