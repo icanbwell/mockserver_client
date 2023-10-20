@@ -53,6 +53,17 @@ def load_mock_fhir_requests_from_folder(
                         url_prefix=url_prefix,
                         response_body=response_body,
                     )
+            elif contents.get("resourceType") == "Bundle" and contents.get("entry"):
+                mock_bundle_request(
+                    fhir_request=contents,
+                    method=method,
+                    mock_client=mock_client,
+                    relative_path=relative_path,
+                    query_string=query_string,
+                    url_prefix=url_prefix,
+                    response_body=response_body,
+                    bundle=contents,
+                )
             else:
                 mock_single_request(
                     fhir_request=contents,
@@ -129,9 +140,7 @@ def mock_single_request(
         # noinspection PyPep8Naming
         resourceType = fhir_request["resourceType"]
         id_ = fhir_request["id"]
-        path = (
-            f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/1/$merge"
-        )
+        path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}/$merge"
         payload: str = (
             json.dumps(
                 [
@@ -178,6 +187,78 @@ def mock_single_request(
             )
 
         print(f"Mocking: GET {mock_client.base_url}{path}{query_string or ''}")
+
+
+def mock_bundle_request(
+    fhir_request: Dict[str, Any],
+    method: str,
+    mock_client: MockServerFriendlyClient,
+    relative_path: Optional[str],
+    query_string: Optional[Dict[str, Any]],
+    url_prefix: Optional[str],
+    response_body: Optional[str],
+    bundle: Dict[str, Any],
+) -> None:
+    # find id and resourceType
+    if method == "POST":
+        id_ = fhir_request["id"] or "1"
+        # noinspection PyPep8Naming
+        resourceType = fhir_request["resourceType"]
+        path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}/$merge"
+        bundle_entries = bundle.get("entry")
+        payload: str = (
+            json.dumps(
+                [
+                    {
+                        "id": entry.get("resource", {}).get("id", ""),
+                        "updated": False,
+                        "created": True,
+                        "resourceType": entry.get("resource", {}).get(
+                            "resourceType", ""
+                        ),
+                    }
+                    for entry in bundle_entries
+                ]
+                if bundle_entries
+                else []
+            )
+            if not response_body
+            else response_body
+        )
+        mock_client.expect(
+            mock_request(
+                method="POST",
+                path=path,
+                body=json_equals([fhir_request]),
+            ),
+            mock_response(body=payload),
+            timing=times(1),
+        )
+        print(
+            f"Mocking Bundle: POST {mock_client.base_url}{path}: {json.dumps(fhir_request)}"
+        )
+    else:
+        if not relative_path:
+            id_ = fhir_request["id"]
+            # noinspection PyPep8Naming
+            resourceType = fhir_request["resourceType"]
+            path = (
+                f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}"
+            )
+            mock_client.expect(
+                mock_request(method="GET", path=path, querystring=query_string),
+                mock_response(body=json.dumps(fhir_request)),
+                timing=times(1),
+            )
+        else:
+            path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{relative_path}"
+            mock_client.expect(
+                mock_request(method="GET", path=path, querystring=query_string),
+                mock_response(body=json.dumps(fhir_request)),
+                timing=times(1),
+            )
+
+        print(f"Mocking Bundle: GET {mock_client.base_url}{path}{query_string or ''}")
 
 
 # noinspection PyPep8Naming
