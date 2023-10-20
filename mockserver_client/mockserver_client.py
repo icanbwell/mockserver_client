@@ -572,9 +572,20 @@ class MockServerFriendlyClient(object):
             # get ids from body and match
             # see if the property is string
             json1_id_list: List[str] = [j["id"] for j in json1_list if "id" in j]
+            json1_resource_type_list: List[str] = [
+                j["resourceType"] for j in json1_list if "resourceType" in j
+            ]
             json2_id_list: List[str] = [j["id"] for j in json2_list if "id" in j]
+            json2_resource_type_list: List[str] = [
+                j["resourceType"] for j in json2_list if "resourceType" in j
+            ]
 
-            return True if json1_id_list == json2_id_list else False
+            return (
+                True
+                if json1_id_list == json2_id_list
+                and json1_resource_type_list == json2_resource_type_list
+                else False
+            )
         elif json1_list is None and json2_list is None:
             return True
         else:
