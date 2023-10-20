@@ -3,6 +3,7 @@ import glob
 import json
 import logging
 import os
+import re
 from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
@@ -36,7 +37,9 @@ class MockServerFriendlyClient(object):
     Based on https://pypi.org/project/mockserver-friendly-client/
     """
 
-    def __init__(self, base_url: str) -> None:
+    def __init__(
+        self, base_url: str, log_all_requests_to_folder: str | Path | None = None
+    ) -> None:
         """
         Client for the MockServer
         Based on https://pypi.org/project/mockserver-friendly-client/
@@ -47,6 +50,7 @@ class MockServerFriendlyClient(object):
         self.expectations: List[MockExpectation] = []
         self.logger: Logger = logging.getLogger("MockServerClient")
         self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
+        self.log_all_requests_to_folder: str | Path | None = log_all_requests_to_folder
 
     def _call(self, command: str, data: Any = None) -> Response:
         return put("{}/{}".format(self.base_url, command), data=data)
@@ -451,25 +455,31 @@ class MockServerFriendlyClient(object):
         :param check_body: whether to match the body or not
         :return: whether the two requests match
         """
-        return (
-            request1.method == request2.method
-            and request1.path == request2.path
-            and MockServerFriendlyClient.normalize_querystring_params(
-                request1.querystring_params
-            )
-            == MockServerFriendlyClient.normalize_querystring_params(
-                request2.querystring_params
-            )
-            and MockServerFriendlyClient.does_id_in_request_match(
-                request1=request1, request2=request2
-            )
-            and (
-                not check_body
-                or MockServerFriendlyClient.does_request_body_match(
-                    request1=request1, request2=request2
-                )
-            )
+        if request1.method != request2.method:
+            return False
+        if request1.path != request2.path:
+            return False
+        request1_query_string: Optional[
+            Dict[str, Any]
+        ] = MockServerFriendlyClient.normalize_querystring_params(
+            request1.querystring_params
         )
+        request2_query_string: Optional[
+            Dict[str, Any]
+        ] = MockServerFriendlyClient.normalize_querystring_params(
+            request2.querystring_params
+        )
+        if request1_query_string != request2_query_string:
+            return False
+        if not MockServerFriendlyClient.does_id_in_request_match(
+            request1=request1, request2=request2
+        ):
+            return False
+        if check_body and not MockServerFriendlyClient.does_request_body_match(
+            request1=request1, request2=request2
+        ):
+            return False
+        return True
 
     @staticmethod
     def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
@@ -488,6 +498,7 @@ class MockServerFriendlyClient(object):
         if request2.body_list and not request1.body_list:
             return False
         if request1.json_list and request2.json_list:
+            # now compare non bundle resources
             comparison_results = list(
                 dictdiffer.diff(request1.json_list, request2.json_list)
             )
@@ -508,10 +519,51 @@ class MockServerFriendlyClient(object):
         json2_list: Optional[List[Dict[str, Any]]] = request2.json_list
 
         if json1_list and json2_list:
+            # handle bundles
+            if len(json1_list) == 1 and len(json2_list) == 1:
+                request1_first_json: Dict[str, Any] = json1_list[0]
+                request2_first_json: Dict[str, Any] = json2_list[0]
+                if (
+                    request1_first_json.get("resourceType")
+                    == request2_first_json.get("resourceType")
+                    == "Bundle"
+                ):
+                    request1_entries: List[
+                        Dict[str, Any]
+                    ] | None = request1_first_json.get("entry")
+                    request2_entries: List[
+                        Dict[str, Any]
+                    ] | None = request2_first_json.get("entry")
+                    if (
+                        request1_entries
+                        and len(request1_entries) > 0
+                        and request2_entries
+                        and len(request2_entries) > 0
+                    ):
+                        request1_first_resource: Dict[
+                            str, Any
+                        ] | None = request1_entries[0].get("resource")
+                        request2_first_resource: Dict[
+                            str, Any
+                        ] | None = request2_entries[0].get("resource")
+                        if request1_first_resource and request2_first_resource:
+                            request1_first_resource_id: Optional[
+                                str
+                            ] = request1_first_resource.get("id")
+                            request2_first_resource_id: Optional[
+                                str
+                            ] = request2_first_resource.get("id")
+                            if (
+                                request1_first_resource_id != request2_first_resource_id
+                                or request1_first_resource.get("resourceType")
+                                != request2_first_resource.get("resourceType")
+                            ):
+                                return False
             # get ids from body and match
             # see if the property is string
             json1_id_list: List[str] = [j["id"] for j in json1_list if "id" in j]
             json2_id_list: List[str] = [j["id"] for j in json2_list if "id" in j]
+
             return True if json1_id_list == json2_id_list else False
         elif json1_list is None and json2_list is None:
             return True
@@ -571,6 +623,8 @@ class MockServerFriendlyClient(object):
         """
         recorded_requests: List[MockRequest] = self.retrieve_requests()
         self.logger.debug(f"Count of retrieved requests: {len(recorded_requests)}")
+        if self.log_all_requests_to_folder:
+            self.write_all_requests_to_folder(recorded_requests=recorded_requests)
         self.logger.debug("-------- All Retrieved Requests -----")
         for recorded_request in recorded_requests:
             self.logger.debug(f"{recorded_request}")
@@ -613,6 +667,62 @@ class MockServerFriendlyClient(object):
             List[Dict[str, Any]], json.loads(result.text)
         )
         return [MockRequest(request=r) for r in raw_requests]
+
+    @staticmethod
+    def safe_string_for_file_path(s: str) -> str:
+        # Replace spaces with underscores
+        s = s.replace(" ", "_")
+
+        # replace / with +
+        s = s.replace("/", "+")
+
+        # Convert to lowercase
+        s = s.lower()
+
+        # Remove any remaining non-alphanumeric characters
+        s = re.sub(r"[^a-z0-9_+]", "", s)
+
+        # Limit length if needed
+        max_length = 255  # Most file systems have a 255-character limit for file names
+        if len(s) > max_length:
+            s = s[:max_length]
+
+        return s
+
+    def write_all_requests_to_folder(
+        self, recorded_requests: List[MockRequest]
+    ) -> None:
+        assert self.log_all_requests_to_folder
+        # write all requests to file
+        for index, recorded_request1 in enumerate(recorded_requests):
+            json_dict: Dict[str, Any] = {
+                "request_parameters": {
+                    "method": f"{recorded_request1.method}",
+                    "path": recorded_request1.path,
+                }
+            }
+            if recorded_request1.querystring_params:
+                json_dict["request_parameters"][
+                    "querystring"
+                ] = recorded_request1.querystring_params
+            if recorded_request1.json_list:
+                json_dict["request_body"] = recorded_request1.json_list
+
+            json_content = json.dumps(json_dict)
+            # path_parts: List[str] = recorded_request1.path.split("/")
+            file_name: str = (
+                (
+                    f"{index}-{self.safe_string_for_file_path(recorded_request1.path)}.json"
+                )
+                if recorded_request1.path
+                else f"{index}.json"
+            )
+            path = Path(self.log_all_requests_to_folder)
+            # for path_part in path_parts:
+            #     path = path.joinpath(path_part)
+            path = path.joinpath(file_name)
+            with open(path, "w") as file:
+                file.write(json_content)
 
     @staticmethod
     def normalize_querystring_params(
