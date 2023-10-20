@@ -1,63 +1,71 @@
 {
-  "resourceType": "PractitionerRole",
+  "resourceType": "Bundle",
   "id": "2222222222-1334245",
-  "meta": {
-    "source": "https://altruahealthshare.org/bad",
-    "security": [
-      {
-        "system": "https://www.icanbwell.com/owner",
-        "code": "altrua"
-      },
-      {
-        "system": "https://www.icanbwell.com/access",
-        "code": "altrua"
-      }
-    ]
-  },
-  "extension": [
+  "entry": [
     {
-      "id": "network",
-      "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference",
-      "valueReference": {
-        "reference": "Organization/Altrua-PHCS-Network",
-        "identifier": {
-          "period": {
-            "start": "2004-04-01",
-            "end": "9999-12-31"
-          }
-        }
-      }
-    },
-    {
-      "id": "new-patients-1",
-      "extension": [
-        {
-          "id": "acceptPatients",
-          "url": "acceptPatients",
-          "valueCodeableConcept": {
-            "coding": [
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "2222222222-1334245",
+        "meta": {
+          "source": "https://altruahealthshare.org/bad",
+          "security": [
+            {
+              "system": "https://www.icanbwell.com/owner",
+              "code": "altrua"
+            },
+            {
+              "system": "https://www.icanbwell.com/access",
+              "code": "altrua"
+            }
+          ]
+        },
+        "extension": [
+          {
+            "id": "network",
+            "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference",
+            "valueReference": {
+              "reference": "Organization/Altrua-PHCS-Network",
+              "identifier": {
+                "period": {
+                  "start": "2004-04-01",
+                  "end": "9999-12-31"
+                }
+              }
+            }
+          },
+          {
+            "id": "new-patients-1",
+            "extension": [
               {
-                "system": "https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/CodeSystem-AcceptingPatientsCS.html",
-                "code": "newpt"
+                "id": "acceptPatients",
+                "url": "acceptPatients",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/CodeSystem-AcceptingPatientsCS.html",
+                      "code": "newpt"
+                    }
+                  ],
+                  "text": "acceptingPatients"
+                }
               }
             ],
-            "text": "acceptingPatients"
+            "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"
           }
-        }
-      ],
-      "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"
-    }
-  ],
-  "specialty": [
-    {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "Pathology (hospital based)",
-          "display": "Pathology (hospital based)"
-        }
-      ],
-      "text": "Pathology (hospital based)"
+        ],
+        "specialty": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "Pathology (hospital based)",
+                "display": "Pathology (hospital based)"
+              }
+            ],
+            "text": "Pathology (hospital based)"
+          }
+        ]
+      }
     }
   ]
 }
