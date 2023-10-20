@@ -356,21 +356,13 @@ class MockServerFriendlyClient(object):
         found_expectation: Optional[MockRequest] = None
         recorded_request: MockRequest
         for recorded_request in recorded_requests:
-            if (
-                expected_request.method
-                and self.does_request_match(
-                    request1=expected_request,
-                    request2=recorded_request,
-                    check_body=False,
-                )
-                or (
-                    expected_request.method
-                    and self.does_id_in_request_match(
-                        request1=expected_request,
-                        request2=recorded_request,
-                    )
-                )
-            ):
+            request_matched = expected_request.method and self.does_request_match(
+                request1=expected_request, request2=recorded_request, check_body=False
+            )
+            request_id_matched = self.does_id_in_request_match(
+                request1=expected_request, request2=recorded_request
+            )
+            if request_matched or request_id_matched:
                 # find all requests that match on url since there can be multiple
                 # and then check if the bodies match
                 # matching_expectations = [
