@@ -41,9 +41,9 @@ class MockServerFriendlyClient(object):
 
     def __init__(
         self,
-            base_url: str,
-            log_all_requests_to_folder: str | Path | None = None,
-            logger: Optional[Logger] = None
+        base_url: str,
+        log_all_requests_to_folder: str | Path | None = None,
+        logger: Optional[Logger] = None,
     ) -> None:
         """
         Client for the MockServer
@@ -287,15 +287,14 @@ class MockServerFriendlyClient(object):
                     recorded_request_ids.append(j)
 
         matched_requests: List[MockRequest] = []
+        self.logger.info(f"========= START MATCHING EXPECTATIONS  ================")
         # now try to match requests to expectations
         for index, expectation in enumerate(self.expectations):
             expected_request = expectation.request
-            self.logger.info(f"========= {index} START MATCHING EXPECTATION  ================")
-            self.logger.info(expected_request)
+            self.logger.info(f"{index} {expected_request}")
             matching_request: Optional[MockRequest] = None
             recorded_requests_not_matched_yet: List[MockRequest] = [
-                r for r in recorded_requests
-                if not r in matched_requests
+                r for r in recorded_requests if not r in matched_requests
             ]
             try:
                 matching_request = self.find_matches_on_request_and_body(
@@ -325,7 +324,9 @@ class MockServerFriendlyClient(object):
                 self.logger.info("IDs sent in requests")
                 self.logger.info(f'{",".join(recorded_request_ids)}')
                 self.logger.info("---- END EXPECTATION NOT MATCHED ----")
-            self.logger.info(f"========= {index} END MATCHING EXPECTATION ================")
+
+        self.logger.info(f"========= END MATCHING EXPECTATIONS ================")
+
         # now fail for every expectation in unmatched_expectation_requests
         for unmatched_expectation in unmatched_expectation_requests:
             exceptions.append(
@@ -369,61 +370,80 @@ class MockServerFriendlyClient(object):
         :param unmatched_requests: list of requests that have not been matched to an expectation
         :return: whether a matching expectation was found
         """
-        found_expectation: Optional[MockRequest] = None
+        matched_request: Optional[MockRequest] = None
         recorded_request: MockRequest
         for recorded_request in recorded_requests:
-            request_matched = expected_request.method and self.does_request_match(
-                request1=expected_request, request2=recorded_request, check_body=False
+            matched_request = self.does_request_match_on_url_only(
+                expected_request=expected_request,
+                recorded_request=recorded_request,
+                unmatched_requests=unmatched_requests,
             )
-            request_id_matched = self.does_id_in_request_match(
-                request1=expected_request, request2=recorded_request
-            )
-            if request_matched or request_id_matched:
-                # find all requests that match on url since there can be multiple
-                # and then check if the bodies match
-                # matching_expectations = [
-                #     m
-                #     for m in self.expectations
-                #     if "method" in m.request
-                #     and self.does_request_match(
-                #         request1=m.request,
-                #         request2=recorded_request,
-                #         check_body=False,
-                #     )
-                # ]
-                found_expectation = recorded_request
-                # remove request from unmatched_requests
-                unmatched_request_list = [
-                    r
-                    for r in unmatched_requests
-                    if self.does_request_match(
-                        request1=r, request2=recorded_request, check_body=True
-                    )
-                ]
-                if expected_request.json_list:
-                    expected_body_json: Optional[
-                        List[Dict[str, Any]]
-                    ] = expected_request.json_list
-                    actual_body_json: Optional[
-                        List[Dict[str, Any]]
-                    ] = recorded_request.json_list
-                    assert len(unmatched_request_list) < 2, (
-                        f"Found {len(unmatched_request_list)}"
-                        f" unmatched requests for {recorded_request}"
-                    )
-                    if len(unmatched_request_list) > 0:
-                        unmatched_requests.remove(unmatched_request_list[0])
-                    self.compare_request_bodies_json(
-                        actual_body_json, expected_body_json
-                    )
-                elif expected_request.body_list:
-                    if len(unmatched_request_list) > 0:
-                        unmatched_requests.remove(unmatched_request_list[0])
-                    self.compare_request_bodies(
-                        recorded_request.body_list, expected_request.body_list
-                    )
+            if matched_request:
+                return matched_request
+        return matched_request
 
-        return found_expectation
+    def does_request_match_on_url_only(
+        self,
+        *,
+        expected_request: MockRequest,
+        recorded_request: MockRequest,
+        unmatched_requests: List[MockRequest],
+    ) -> Optional[MockRequest]:
+        """
+        Checks if the two requests match on url only
+
+
+        """
+        request_matched = expected_request.method and self.does_request_match(
+            request1=expected_request, request2=recorded_request, check_body=False
+        )
+        request_id_matched = self.does_id_in_request_match(
+            request1=expected_request, request2=recorded_request
+        )
+        if request_matched or request_id_matched:
+            # find all requests that match on url since there can be multiple
+            # and then check if the bodies match
+            # matching_expectations = [
+            #     m
+            #     for m in self.expectations
+            #     if "method" in m.request
+            #     and self.does_request_match(
+            #         request1=m.request,
+            #         request2=recorded_request,
+            #         check_body=False,
+            #     )
+            # ]
+            matched_request: MockRequest = recorded_request
+            # remove request from unmatched_requests
+            unmatched_request_list = [
+                r
+                for r in unmatched_requests
+                if self.does_request_match(
+                    request1=r, request2=recorded_request, check_body=True
+                )
+            ]
+            if expected_request.json_list:
+                expected_body_json: Optional[
+                    List[Dict[str, Any]]
+                ] = expected_request.json_list
+                actual_body_json: Optional[
+                    List[Dict[str, Any]]
+                ] = recorded_request.json_list
+                assert len(unmatched_request_list) < 2, (
+                    f"Found {len(unmatched_request_list)}"
+                    f" unmatched requests for {recorded_request}"
+                )
+                if len(unmatched_request_list) > 0:
+                    unmatched_requests.remove(unmatched_request_list[0])
+                self.compare_request_bodies_json(actual_body_json, expected_body_json)
+            elif expected_request.body_list:
+                if len(unmatched_request_list) > 0:
+                    unmatched_requests.remove(unmatched_request_list[0])
+                self.compare_request_bodies(
+                    recorded_request.body_list, expected_request.body_list
+                )
+            return matched_request
+        return None
 
     def find_matches_on_request_and_body(
         self,
@@ -444,30 +464,51 @@ class MockServerFriendlyClient(object):
         # first try to find all exact matches on both request url and body
         matching_request: Optional[MockRequest] = None
         for recorded_request in recorded_requests:
-            # first try to match on both request url AND body
-            # If match is found then remove this request from list of unmatched requests
-            if expected_request.method and self.does_request_match(
-                request1=expected_request,
-                request2=recorded_request,
-                check_body=True,
-            ):
-                matching_request = recorded_request
-                # remove request from unmatched_requests
-                unmatched_request_list = [
-                    r
-                    for r in unmatched_requests
-                    if self.does_request_match(
-                        request1=r, request2=recorded_request, check_body=True
-                    )
-                ]
-                assert (
-                    len(unmatched_request_list) >= 0
-                ), f"{','.join([str(c) for c in unmatched_request_list])}"
-                if len(unmatched_request_list) > 0:
-                    unmatched_requests.remove(unmatched_request_list[0])
-
+            matching_request = self.does_request_match_on_url_and_body(
+                expected_request=expected_request,
+                recorded_request=recorded_request,
+                unmatched_requests=unmatched_requests,
+            )
+            if matching_request:
+                return matching_request
             # now try to find matches on just url
         return matching_request
+
+    def does_request_match_on_url_and_body(
+        self,
+        *,
+        expected_request: MockRequest,
+        recorded_request: MockRequest,
+        unmatched_requests: List[MockRequest],
+    ) -> Optional[MockRequest]:
+        """
+        Returns the request if it matches and removes it from the unmatched_requests list
+
+
+        """
+        # first try to match on both request url AND body
+        # If match is found then remove this request from list of unmatched requests
+        if expected_request.method and self.does_request_match(
+            request1=expected_request,
+            request2=recorded_request,
+            check_body=True,
+        ):
+            matching_request = recorded_request
+            # remove request from unmatched_requests
+            unmatched_request_list = [
+                r
+                for r in unmatched_requests
+                if self.does_request_match(
+                    request1=r, request2=recorded_request, check_body=True
+                )
+            ]
+            assert (
+                len(unmatched_request_list) >= 0
+            ), f"{','.join([str(c) for c in unmatched_request_list])}"
+            if len(unmatched_request_list) > 0:
+                unmatched_requests.remove(unmatched_request_list[0])
+            return matching_request
+        return None
 
     @staticmethod
     def does_request_match(

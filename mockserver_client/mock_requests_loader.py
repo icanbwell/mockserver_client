@@ -37,7 +37,9 @@ def load_mock_fhir_requests_from_folder(
     :param response_body:
     """
     file_name: str
-    files: List[str] = sorted(glob(str(folder.joinpath("**/*.json")), recursive=True), reverse=True)
+    files: List[str] = sorted(
+        glob(str(folder.joinpath("**/*.json")), recursive=True), reverse=True
+    )
     for file_name in files:
         # load file as json
         with open(file_name, "r") as file:
