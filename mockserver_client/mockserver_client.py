@@ -130,7 +130,12 @@ class MockServerFriendlyClient(object):
         """
         self.stub(request1, response1, timing, time_to_live)
         self.expectations.append(
-            MockExpectation(request=request1, response=response1, timing=timing)
+            MockExpectation(
+                request=request1,
+                response=response1,
+                timing=timing,
+                index=len(self.expectations),
+            )
         )
 
     def expect_files_as_requests(
@@ -241,7 +246,9 @@ class MockServerFriendlyClient(object):
         response1: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
         self.stub({}, response1, timing, None)
-        self.expectations.append(MockExpectation({}, {}, timing))
+        self.expectations.append(
+            MockExpectation({}, {}, timing, index=len(self.expectations))
+        )
 
     def match_to_recorded_requests(
         self,
@@ -749,7 +756,9 @@ class MockServerFriendlyClient(object):
         raw_requests: List[Dict[str, Any]] = cast(
             List[Dict[str, Any]], json.loads(result.text)
         )
-        return [MockRequest(request=r) for r in raw_requests]
+        return [
+            MockRequest(request=r, index=index) for index, r in enumerate(raw_requests)
+        ]
 
     def retrieve_request_responses(self) -> List[MockRequestResponse]:
         """
@@ -765,9 +774,11 @@ class MockServerFriendlyClient(object):
         )
         return [
             MockRequestResponse(
-                request=r.get("httpRequest"), response=r.get("httpResponse")
+                request=r.get("httpRequest"),
+                response=r.get("httpResponse"),
+                index=index,
             )
-            for r in raw_requests
+            for index, r in enumerate(raw_requests)
         ]
 
     @staticmethod

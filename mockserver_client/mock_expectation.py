@@ -6,7 +6,11 @@ from mockserver_client.mock_request import MockRequest
 
 class MockExpectation:
     def __init__(
-        self, request: Dict[str, Any], response: Dict[str, Any], timing: _Timing
+        self,
+        request: Dict[str, Any],
+        response: Dict[str, Any],
+        timing: _Timing,
+        index: int,
     ) -> None:
         """
         Class for Expectation
@@ -15,7 +19,7 @@ class MockExpectation:
         :param response: response
         :param timing: timing
         """
-        self.request: MockRequest = MockRequest(request)
+        self.request: MockRequest = MockRequest(request=request, index=index)
         self.response: Dict[str, Any] = response
         self.timing: _Timing = timing
 

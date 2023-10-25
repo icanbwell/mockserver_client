@@ -4,22 +4,32 @@ from urllib.parse import parse_qs
 
 
 class MockRequest:
-    def __init__(self, request: Dict[str, Any]) -> None:
+    def __init__(self, request: Dict[str, Any], index: int) -> None:
         """
         Class for mock requests
 
         :param request:
         """
+        assert index is not None
+        self.index: int = index
+        assert request is not None
+        assert isinstance(request, dict)
         self.request: Dict[str, Any] = request
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")
         self.querystring_params: Dict[str, Any] | List[
             Dict[str, Any]
         ] | None = self.request.get("queryStringParameters")
+        assert (
+            not self.querystring_params
+            or isinstance(self.querystring_params, dict)
+            or isinstance(self.querystring_params, list)
+        ), type(self.querystring_params)
+
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
 
-        raw_body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]] = cast(
-            Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+        raw_body: str | bytes | Dict[str, Any] | List[Dict[str, Any]] = cast(
+            str | bytes | Dict[str, Any] | List[Dict[str, Any]],
             self.request.get("body"),
         )
 
@@ -104,7 +114,7 @@ class MockRequest:
 
     def __str__(self) -> str:
         return (
-            f"{self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
+            f"{self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
             f"{self.json_list}"
         )
 
