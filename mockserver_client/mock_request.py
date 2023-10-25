@@ -13,7 +13,7 @@ class MockRequest:
         self.request: Dict[str, Any] = request
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")
-        self.querystring_params: Optional[Dict[str, Any]] = self.request.get(
+        self.querystring_params: Dict[str, Any] | List[Dict[str, Any]] | None = self.request.get(
             "queryStringParameters"
         )
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
@@ -34,8 +34,8 @@ class MockRequest:
         raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
             self.body_list[0].get("json")
             if self.body_list is not None
-            and len(self.body_list) > 0
-            and "json" in self.body_list[0]
+               and len(self.body_list) > 0
+               and "json" in self.body_list[0]
             else self.body_list
             if self.body_list is not None and len(self.body_list) > 0
             else None
@@ -53,9 +53,9 @@ class MockRequest:
 
     @staticmethod
     def parse_body(
-        *,
-        body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
-        headers: Optional[Dict[str, Any]],
+            *,
+            body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+            headers: Optional[Dict[str, Any]],
     ) -> Optional[List[Dict[str, Any]]]:
         # body can be either:
         # 0. None
@@ -77,10 +77,10 @@ class MockRequest:
 
         if isinstance(body, dict):
             if (
-                body
-                and "string" in body
-                and headers
-                and headers.get("Content-Type") == ["application/x-www-form-urlencoded"]
+                    body
+                    and "string" in body
+                    and headers
+                    and headers.get("Content-Type") == ["application/x-www-form-urlencoded"]
             ):
                 return [MockRequest.convert_query_parameters_to_dict(body["string"])]
             else:
@@ -104,8 +104,8 @@ class MockRequest:
 
     def __str__(self) -> str:
         return (
-            f"url: {self.path} \nquery params: {self.querystring_params} \n"
-            f"json: {self.json_list}"
+            f"{self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
+            f"{self.json_list}"
         )
 
     @staticmethod
@@ -115,7 +115,23 @@ class MockRequest:
 
     def matches_without_body(self, other: "MockRequest") -> bool:
         return (
-            self.method == other.method
-            and self.path == other.path
-            and self.querystring_params == other.querystring_params
+                self.method == other.method
+                and self.path == other.path
+                and self.querystring_params == other.querystring_params
         )
+
+    @staticmethod
+    def convert_query_parameters_to_str(query_parameters: Dict[str, Any] | List[Dict[str, Any]] | None) -> str:
+        if query_parameters is None:
+            return ""
+        if isinstance(query_parameters, dict):
+            return "?" + "&".join([f"{k}={MockRequest.get_value_as_str(v)}" for k,v in query_parameters.items()])
+        assert isinstance(query_parameters, list)
+        return "?" + "&".join([f"{v.get('name')}={MockRequest.get_value_as_str(v.get('values'))}" for v in query_parameters])
+
+    @staticmethod
+    def get_value_as_str(values: List[Any]) -> str:
+        if values is not None:
+            assert isinstance(values, list)
+            return ','.join([str(v) for v in values])
+        return ""
