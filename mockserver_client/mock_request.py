@@ -114,7 +114,7 @@ class MockRequest:
 
     def __str__(self) -> str:
         return (
-            f"{self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
+            f"({self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
             f"{self.json_list}"
         )
 

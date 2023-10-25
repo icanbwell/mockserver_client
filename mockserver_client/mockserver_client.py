@@ -296,9 +296,9 @@ class MockServerFriendlyClient(object):
         matched_requests: List[MockRequest] = []
         self.logger.info(f"========= START MATCHING EXPECTATIONS  ================")
         # now try to match requests to expectations
-        for index, expectation in enumerate(self.expectations):
+        for expectation in self.expectations:
             expected_request = expectation.request
-            self.logger.info(f"{index} {expected_request}")
+            self.logger.info(f"{expected_request}")
             matching_request: Optional[MockRequest] = None
             recorded_requests_not_matched_yet: List[MockRequest] = [
                 r for r in recorded_requests if not r in matched_requests
