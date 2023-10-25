@@ -4,7 +4,9 @@ from urllib.parse import parse_qs
 
 
 class MockRequest:
-    def __init__(self, request: Dict[str, Any], index: int) -> None:
+    def __init__(
+        self, request: Dict[str, Any], index: int, file_path: Optional[str]
+    ) -> None:
         """
         Class for mock requests
 
@@ -15,6 +17,9 @@ class MockRequest:
         assert request is not None
         assert isinstance(request, dict)
         self.request: Dict[str, Any] = request
+
+        self.file_path: Optional[str] = file_path
+
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")
         self.querystring_params: Dict[str, Any] | List[
@@ -115,7 +120,9 @@ class MockRequest:
     def __str__(self) -> str:
         return (
             f"({self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
-            f"{self.json_list}"
+            f"{self.json_list}" + f" ({self.file_path})"
+            if self.file_path
+            else ""
         )
 
     @staticmethod

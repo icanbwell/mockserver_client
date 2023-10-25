@@ -3,7 +3,9 @@ from typing import Dict, Any, List, Optional
 
 
 class MockResponse:
-    def __init__(self, *, response: Dict[str, Any], index: int) -> None:
+    def __init__(
+        self, *, response: Dict[str, Any], index: int, file_path: Optional[str]
+    ) -> None:
         assert index is not None
         assert response is not None
         assert isinstance(response, dict)
@@ -21,3 +23,4 @@ class MockResponse:
 
         self.status_code: int | None = response.get("statusCode")
         self.index: int = index
+        self.file_path: Optional[str] = file_path

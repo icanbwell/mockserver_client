@@ -86,8 +86,9 @@ class MockServerFriendlyClient(object):
 
     def stub(
         self,
-        request1: Any,
-        response1: Any,
+        *,
+        request: Any,
+        response: Any,
         timing: Any = None,
         time_to_live: Any = None,
     ) -> None:
@@ -95,8 +96,8 @@ class MockServerFriendlyClient(object):
         Create an expectation in mock server
 
 
-        :param request1: mock request
-        :param response1: mock response
+        :param request: mock request
+        :param response: mock response
         :param timing: how many times to expect the request
         :param time_to_live:
         """
@@ -104,8 +105,8 @@ class MockServerFriendlyClient(object):
             "expectation",
             json.dumps(
                 _non_null_options_to_dict(
-                    _Option("httpRequest", request1),
-                    _Option("httpResponse", response1),
+                    _Option("httpRequest", request),
+                    _Option("httpResponse", response),
                     _Option("times", (timing or _Timing()).for_expectation()),
                     _Option("timeToLive", time_to_live, formatter=_to_time_to_live),
                 )
@@ -114,27 +115,33 @@ class MockServerFriendlyClient(object):
 
     def expect(
         self,
-        request1: Dict[str, Any],
-        response1: Dict[str, Any],
+        *,
+        request: Dict[str, Any],
+        response: Dict[str, Any],
         timing: _Timing,
         time_to_live: Any = None,
+        file_path: Optional[str],
     ) -> None:
         """
         Expect this mock request and reply with the provided mock response
 
 
-        :param request1: mock request
-        :param response1: mock response
+        :param request: mock request
+        :param response: mock response
         :param timing: how many times to expect the request
         :param time_to_live:
+        :param file_path: file path
         """
-        self.stub(request1, response1, timing, time_to_live)
+        self.stub(
+            request=request, response=response, timing=timing, time_to_live=time_to_live
+        )
         self.expectations.append(
             MockExpectation(
-                request=request1,
-                response=response1,
+                request=request,
+                response=response,
                 timing=timing,
                 index=len(self.expectations),
+                file_path=file_path,
             )
         )
 
@@ -190,9 +197,10 @@ class MockServerFriendlyClient(object):
                     else request_result
                 )
                 self.expect(
-                    mock_request(path=path, **request_parameters),
-                    mock_response(body=body),
+                    request=mock_request(path=path, **request_parameters),
+                    response=mock_response(body=body),
                     timing=times(1),
+                    file_path=file_path,
                 )
                 self.logger.info(f"Mocking {self.base_url}{path}: {request_parameters}")
         return files
@@ -228,9 +236,12 @@ class MockServerFriendlyClient(object):
                     else path
                 )
                 self.expect(
-                    mock_request(path=path, body=json_equals([content]), method="POST"),
-                    mock_response(body=json.dumps(json_response_body)),
+                    request=mock_request(
+                        path=path, body=json_equals([content]), method="POST"
+                    ),
+                    response=mock_response(body=json.dumps(json_response_body)),
                     timing=times(1),
+                    file_path=file_path,
                 )
                 self.logger.info(f"Mocking {self.base_url}{path}")
         return files
@@ -243,11 +254,13 @@ class MockServerFriendlyClient(object):
 
 
         """
-        response1: Dict[str, Any] = mock_response()
+        response: Dict[str, Any] = mock_response()
         timing: _Timing = times_any()
-        self.stub({}, response1, timing, None)
+        self.stub(request={}, response=response, timing=timing, time_to_live=None)
         self.expectations.append(
-            MockExpectation({}, {}, timing, index=len(self.expectations))
+            MockExpectation(
+                {}, {}, timing, index=len(self.expectations), file_path="{catch all}"
+            )
         )
 
     def match_to_recorded_requests(
@@ -298,6 +311,9 @@ class MockServerFriendlyClient(object):
         # now try to match requests to expectations
         for expectation in self.expectations:
             expected_request = expectation.request
+            self.logger.info(
+                f"------- Expectation {expected_request.index}/{len(self.expectations) - 1} -------"
+            )
             self.logger.info(f"{expected_request}")
             matching_request: Optional[MockRequest] = None
             recorded_requests_not_matched_yet: List[MockRequest] = [
@@ -310,7 +326,7 @@ class MockServerFriendlyClient(object):
                     unmatched_requests=unmatched_requests,
                 )
                 if matching_request:
-                    self.logger.info(f"YES (exact) {matching_request}")
+                    self.logger.info(f"MATCHED (exact) to {matching_request}")
                 else:
                     matching_request = self.find_matches_on_request_url_only(
                         expected_request=expected_request,
@@ -319,7 +335,7 @@ class MockServerFriendlyClient(object):
                     )
                     if matching_request:
                         matched_requests.append(matching_request)
-                        self.logger.info(f"YES (url only) {matching_request}")
+                        self.logger.info(f"MATCHED (url only) to {matching_request}")
                     else:
                         self.logger.info(f"NO {matching_request}")
             except MockServerJsonContentMismatchException as e:
@@ -331,7 +347,6 @@ class MockServerFriendlyClient(object):
                 self.logger.info("IDs sent in requests")
                 self.logger.info(f'{",".join(recorded_request_ids)}')
                 self.logger.info("---- END EXPECTATION NOT MATCHED ----")
-
         self.logger.info(f"========= END MATCHING EXPECTATIONS ================")
 
         # now fail for every expectation in unmatched_expectation_requests
@@ -757,7 +772,8 @@ class MockServerFriendlyClient(object):
             List[Dict[str, Any]], json.loads(result.text)
         )
         return [
-            MockRequest(request=r, index=index) for index, r in enumerate(raw_requests)
+            MockRequest(request=r, index=index, file_path=None)
+            for index, r in enumerate(raw_requests)
         ]
 
     def retrieve_request_responses(self) -> List[MockRequestResponse]:

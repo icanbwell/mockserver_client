@@ -22,7 +22,7 @@ def test_mock_server_inline_json_order() -> None:
     mock_client.clear(f"/{test_name}/*.*")
 
     mock_client.expect(
-        mock_request(
+        request=mock_request(
             path="/" + test_name,
             method="POST",
             body={
@@ -132,7 +132,7 @@ def test_mock_server_inline_json_order() -> None:
                 }
             },
         ),
-        mock_response(
+        response=mock_response(
             body=json.dumps(
                 {
                     "token_type": "bearer",
@@ -142,6 +142,7 @@ def test_mock_server_inline_json_order() -> None:
             )
         ),
         timing=times(1),
+        file_path=None,
     )
 
     http = requests.Session()
