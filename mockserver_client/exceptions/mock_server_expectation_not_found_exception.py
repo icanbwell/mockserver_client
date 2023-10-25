@@ -16,7 +16,7 @@ class MockServerExpectationNotFoundException(MockServerException):
         method: Optional[str],
         url: Optional[str],
         json_list: Optional[List[Dict[str, Any]]],
-        querystring_params: Optional[Dict[str, Any]] = None,
+        querystring_params: Dict[str, Any] | List[Dict[str, Any]] | None = None,
         expectation: MockRequest,
     ) -> None:
         """
@@ -31,7 +31,9 @@ class MockServerExpectationNotFoundException(MockServerException):
         self.method: Optional[str] = method
         self.url: Optional[str] = url
         self.json_list: Optional[List[Dict[str, Any]]] = json_list
-        self.querystring_params: Optional[Dict[str, Any]] = querystring_params
+        self.querystring_params: Dict[str, Any] | List[
+            Dict[str, Any]
+        ] | None = querystring_params
         self.expectation: MockRequest = expectation
         super().__init__(
             f"Expectation not met: {method} {url} {querystring_params!r} "

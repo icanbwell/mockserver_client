@@ -16,7 +16,7 @@ class MockServerRequestNotFoundException(MockServerException):
         method: Optional[str],
         url: Optional[str],
         json_list: Optional[List[Dict[str, Any]]],
-        querystring_params: Optional[Dict[str, Any]] = None,
+        querystring_params: Dict[str, Any] | List[Dict[str, Any]] | None = None,
         request: MockRequest,
     ) -> None:
         """
@@ -30,7 +30,9 @@ class MockServerRequestNotFoundException(MockServerException):
         self.method: Optional[str] = method
         self.url: Optional[str] = url
         self.json_dict: Optional[List[Dict[str, Any]]] = json_list
-        self.querystring_params: Optional[Dict[str, Any]] = querystring_params
+        self.querystring_params: Dict[str, Any] | List[
+            Dict[str, Any]
+        ] | None = querystring_params
         self.request: MockRequest = request
         assert (
             not json_list or isinstance(json_list, dict) or isinstance(json_list, list)

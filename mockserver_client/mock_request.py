@@ -4,22 +4,37 @@ from urllib.parse import parse_qs
 
 
 class MockRequest:
-    def __init__(self, request: Dict[str, Any]) -> None:
+    def __init__(
+        self, request: Dict[str, Any], index: int, file_path: Optional[str]
+    ) -> None:
         """
         Class for mock requests
 
         :param request:
         """
+        assert index is not None
+        self.index: int = index
+        assert request is not None
+        assert isinstance(request, dict)
         self.request: Dict[str, Any] = request
+
+        self.file_path: Optional[str] = file_path
+
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")
-        self.querystring_params: Optional[Dict[str, Any]] = self.request.get(
-            "queryStringParameters"
-        )
+        self.querystring_params: Dict[str, Any] | List[
+            Dict[str, Any]
+        ] | None = self.request.get("queryStringParameters")
+        assert (
+            not self.querystring_params
+            or isinstance(self.querystring_params, dict)
+            or isinstance(self.querystring_params, list)
+        ), type(self.querystring_params)
+
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
 
-        raw_body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]] = cast(
-            Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+        raw_body: str | bytes | Dict[str, Any] | List[Dict[str, Any]] = cast(
+            str | bytes | Dict[str, Any] | List[Dict[str, Any]],
             self.request.get("body"),
         )
 
@@ -104,8 +119,10 @@ class MockRequest:
 
     def __str__(self) -> str:
         return (
-            f"url: {self.path} \nquery params: {self.querystring_params} \n"
-            f"json: {self.json_list}"
+            f"({self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
+            f"{self.json_list}" + f" ({self.file_path})"
+            if self.file_path
+            else ""
         )
 
     @staticmethod
@@ -119,3 +136,31 @@ class MockRequest:
             and self.path == other.path
             and self.querystring_params == other.querystring_params
         )
+
+    @staticmethod
+    def convert_query_parameters_to_str(
+        query_parameters: Dict[str, Any] | List[Dict[str, Any]] | None
+    ) -> str:
+        if query_parameters is None:
+            return ""
+        if isinstance(query_parameters, dict):
+            return "?" + "&".join(
+                [
+                    f"{k}={MockRequest.get_value_as_str(v)}"
+                    for k, v in query_parameters.items()
+                ]
+            )
+        assert isinstance(query_parameters, list)
+        return "?" + "&".join(
+            [
+                f"{v.get('name')}={MockRequest.get_value_as_str(v.get('values'))}"
+                for v in query_parameters
+            ]
+        )
+
+    @staticmethod
+    def get_value_as_str(values: List[Any] | None) -> str:
+        if values is not None:
+            assert isinstance(values, list)
+            return ",".join([str(v) for v in values])
+        return ""

@@ -36,11 +36,13 @@ def load_mock_fhir_requests_from_folder(
     :param url_prefix:
     :param response_body:
     """
-    file_name: str
-    files: List[str] = sorted(glob(str(folder.joinpath("**/*.json")), recursive=True))
-    for file_name in files:
+    file_path: str
+    files: List[str] = sorted(
+        glob(str(folder.joinpath("**/*.json")), recursive=True), reverse=True
+    )
+    for file_path in files:
         # load file as json
-        with open(file_name, "r") as file:
+        with open(file_path, "r") as file:
             contents = json.loads(file.read())
             if isinstance(contents, list) and not relative_path:
                 for fhir_request in contents:
@@ -52,6 +54,7 @@ def load_mock_fhir_requests_from_folder(
                         query_string=query_string,
                         url_prefix=url_prefix,
                         response_body=response_body,
+                        file_path=file_path,
                     )
             elif contents.get("resourceType") == "Bundle" and contents.get("entry"):
                 mock_bundle_request(
@@ -63,6 +66,7 @@ def load_mock_fhir_requests_from_folder(
                     url_prefix=url_prefix,
                     response_body=response_body,
                     bundle=contents,
+                    file_path=file_path,
                 )
             else:
                 mock_single_request(
@@ -73,6 +77,7 @@ def load_mock_fhir_requests_from_folder(
                     query_string=query_string,
                     url_prefix=url_prefix,
                     response_body=response_body,
+                    file_path=file_path,
                 )
 
     return files
@@ -103,13 +108,13 @@ def load_mock_fhir_requests_for_single_file(
     :param response_body:
     """
 
-    file_name: str
+    file_path: str
     files: List[str] = sorted(
         glob(str(folder.joinpath(f"**/{single_file_name}")), recursive=True)
     )
-    for file_name in files:
+    for file_path in files:
         # load file as json
-        with open(file_name, "r") as file:
+        with open(file_path, "r") as file:
             contents = json.loads(file.read())
 
             mock_single_request(
@@ -120,6 +125,7 @@ def load_mock_fhir_requests_for_single_file(
                 query_string=query_string,
                 url_prefix=url_prefix,
                 response_body=response_body,
+                file_path=file_path,
             )
 
     return files
@@ -133,6 +139,7 @@ def mock_single_request(
     query_string: Optional[Dict[str, Any]],
     url_prefix: Optional[str],
     response_body: Optional[str],
+    file_path: Optional[str],
 ) -> None:
     # find id and resourceType
     if method == "POST":
@@ -156,13 +163,14 @@ def mock_single_request(
             else response_body
         )
         mock_client.expect(
-            mock_request(
+            request=mock_request(
                 method="POST",
                 path=path,
                 body=json_equals([fhir_request]),
             ),
-            mock_response(body=payload),
+            response=mock_response(body=payload),
             timing=times(1),
+            file_path=file_path,
         )
         print(f"Mocking: POST {mock_client.base_url}{path}: {json.dumps(fhir_request)}")
     else:
@@ -174,16 +182,18 @@ def mock_single_request(
                 f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}"
             )
             mock_client.expect(
-                mock_request(method="GET", path=path, querystring=query_string),
-                mock_response(body=json.dumps(fhir_request)),
+                request=mock_request(method="GET", path=path, querystring=query_string),
+                response=mock_response(body=json.dumps(fhir_request)),
                 timing=times(1),
+                file_path=file_path,
             )
         else:
             path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{relative_path}"
             mock_client.expect(
-                mock_request(method="GET", path=path, querystring=query_string),
-                mock_response(body=json.dumps(fhir_request)),
+                request=mock_request(method="GET", path=path, querystring=query_string),
+                response=mock_response(body=json.dumps(fhir_request)),
                 timing=times(1),
+                file_path=file_path,
             )
 
         print(f"Mocking: GET {mock_client.base_url}{path}{query_string or ''}")
@@ -198,6 +208,7 @@ def mock_bundle_request(
     url_prefix: Optional[str],
     response_body: Optional[str],
     bundle: Dict[str, Any],
+    file_path: Optional[str],
 ) -> None:
     # find id and resourceType
     if method == "POST":
@@ -226,13 +237,14 @@ def mock_bundle_request(
             else response_body
         )
         mock_client.expect(
-            mock_request(
+            request=mock_request(
                 method="POST",
                 path=path,
                 body=json_equals([fhir_request]),
             ),
-            mock_response(body=payload),
+            response=mock_response(body=payload),
             timing=times(1),
+            file_path=file_path,
         )
         print(
             f"Mocking Bundle: POST {mock_client.base_url}{path}: {json.dumps(fhir_request)}"
@@ -246,16 +258,18 @@ def mock_bundle_request(
                 f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}"
             )
             mock_client.expect(
-                mock_request(method="GET", path=path, querystring=query_string),
-                mock_response(body=json.dumps(fhir_request)),
+                request=mock_request(method="GET", path=path, querystring=query_string),
+                response=mock_response(body=json.dumps(fhir_request)),
                 timing=times(1),
+                file_path=file_path,
             )
         else:
             path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{relative_path}"
             mock_client.expect(
-                mock_request(method="GET", path=path, querystring=query_string),
-                mock_response(body=json.dumps(fhir_request)),
+                request=mock_request(method="GET", path=path, querystring=query_string),
+                response=mock_response(body=json.dumps(fhir_request)),
                 timing=times(1),
+                file_path=file_path,
             )
 
         print(f"Mocking Bundle: GET {mock_client.base_url}{path}{query_string or ''}")
@@ -278,22 +292,23 @@ def load_mock_fhir_everything_requests_from_folder(
     :param resourceType:
     :param url_prefix:
     """
-    file_name: str
+    file_path: str
     files: List[str] = glob(str(folder.joinpath("**/*.json")), recursive=True)
-    for file_name in files:
+    for file_path in files:
         # load file as json
-        with open(file_name, "r") as file:
+        with open(file_path, "r") as file:
             fhir_request: Dict[str, Any] = json.loads(file.read())
             # find id and resourceType
             id_: str = fhir_request["id"]
             path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}/$everything"
             mock_client.expect(
-                mock_request(
+                request=mock_request(
                     method="GET",
                     path=path,
                 ),
-                mock_response(body=json.dumps(fhir_request)),
+                response=mock_response(body=json.dumps(fhir_request)),
                 timing=times(1),
+                file_path=file_path,
             )
             print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
@@ -318,7 +333,7 @@ def load_mock_fhir_everything_batch_requests_from_folder(
     :param url_prefix:
     :param ids: id of resources for this batch to load
     """
-    file_name: str
+    file_path: str
     files: List[str] = glob(str(folder.joinpath("**/*.json")), recursive=True)
     result_bundle = {
         "resourceType": "Bundle",
@@ -327,11 +342,11 @@ def load_mock_fhir_everything_batch_requests_from_folder(
         "entry": [],
     }
     print(f"mock fhir batch request for {ids}")
-    for file_name in files:
-        with open(file_name, "r") as file:
+    for file_path in files:
+        with open(file_path, "r") as file:
             fhir_bundle: Dict[str, Any] = json.loads(file.read())
         if "entry" not in fhir_bundle:
-            print(f"{file_name} has no entry property!")
+            print(f"{file_path} has no entry property!")
             continue
         for entry in fhir_bundle["entry"]:
             id_ = entry.get("resource", {}).get("id", "")
@@ -342,9 +357,12 @@ def load_mock_fhir_everything_batch_requests_from_folder(
         f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/$everything"
     )
     mock_client.expect(
-        mock_request(method="GET", path=path, querystring={"id": ",".join(ids)}),
-        mock_response(body=json.dumps(result_bundle)),
+        request=mock_request(
+            method="GET", path=path, querystring={"id": ",".join(ids)}
+        ),
+        response=mock_response(body=json.dumps(result_bundle)),
         timing=times(1),
+        file_path=files[0] if files else None,
     )
     print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
@@ -362,11 +380,11 @@ def load_mock_elasticsearch_requests_from_folder(
     :param mock_client:
     :param index:
     """
-    file_name: str
+    file_path: str
     files: List[str] = glob(str(folder.joinpath("**/*.json")), recursive=True)
-    for file_name in files:
+    for file_path in files:
         # load file as json
-        with open(file_name, "r") as file:
+        with open(file_path, "r") as file:
             lines: List[str] = file.readlines()
             http_request: str = "\n".join(
                 [
@@ -378,12 +396,12 @@ def load_mock_elasticsearch_requests_from_folder(
             path = f"/{index}/_bulk"
             # noinspection SpellCheckingInspection
             mock_client.expect(
-                mock_request(
+                request=mock_request(
                     method="POST",
                     path=path,
                     body=text_equals(http_request),
                 ),
-                mock_response(
+                response=mock_response(
                     headers={"Content-Type": "application/json"},
                     body=f"""
 {{
@@ -412,6 +430,7 @@ def load_mock_elasticsearch_requests_from_folder(
 }}""",
                 ),
                 timing=times(1),
+                file_path=file_path,
             )
             print(f"Mocking: POST {mock_client.base_url}{path}")
     return files
@@ -436,12 +455,13 @@ def load_mock_source_api_responses_from_folder(
             content = file.read()
             path = f"{('/' + url_prefix) if url_prefix else ''}/{os.path.basename(file_path)}"
             mock_client.expect(
-                mock_request(
+                request=mock_request(
                     method="GET",
                     path=path,
                 ),
-                mock_response(body=content),
+                response=mock_response(body=content),
                 timing=times(1),
+                file_path=file_path,
             )
             print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
@@ -507,11 +527,12 @@ def load_mock_source_api_json_responses(
                 )
 
             mock_client.expect(
-                mock_request(path=path, **request_parameters),
-                mock_response(body=json.dumps(request_result))
+                request=mock_request(path=path, **request_parameters),
+                response=mock_response(body=json.dumps(request_result))
                 if not code
                 else mock_response(code=code),
                 timing=times(1),
+                file_path=file_path,
             )
             print(f"Mocking {mock_client.base_url}{path}: {request_parameters}")
     return files
