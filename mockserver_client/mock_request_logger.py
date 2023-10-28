@@ -35,9 +35,9 @@ class MockRequestLogger:
                 if query_string_parameters
                 else ""
             )
-            + (f" from ({file_path})" if file_path else "")
-            + (f": body: {body}" if body else "")
-            + (f": returns: {response_body}" if response_body else "")
+            + (f", from: ({file_path})" if file_path else "")
+            + (f", body: {body}" if body else "")
+            + (f", response: {response_body}" if response_body else "")
         )
 
     @staticmethod
