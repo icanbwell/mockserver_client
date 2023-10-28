@@ -2,6 +2,8 @@ import json
 from typing import Dict, Any, Optional, List, Union, cast
 from urllib.parse import parse_qs
 
+from mockserver_client.mock_request_logger import MockRequestLogger
+
 
 class MockRequest:
     def __init__(
@@ -119,7 +121,7 @@ class MockRequest:
 
     def __str__(self) -> str:
         return (
-            f"({self.index}) {self.path}{self.convert_query_parameters_to_str(self.querystring_params)}: "
+            f"({self.index}) {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}: "
             f"{self.json_list}" + f" ({self.file_path})"
             if self.file_path
             else ""
@@ -136,31 +138,3 @@ class MockRequest:
             and self.path == other.path
             and self.querystring_params == other.querystring_params
         )
-
-    @staticmethod
-    def convert_query_parameters_to_str(
-        query_parameters: Dict[str, Any] | List[Dict[str, Any]] | None
-    ) -> str:
-        if query_parameters is None:
-            return ""
-        if isinstance(query_parameters, dict):
-            return "?" + "&".join(
-                [
-                    f"{k}={MockRequest.get_value_as_str(v)}"
-                    for k, v in query_parameters.items()
-                ]
-            )
-        assert isinstance(query_parameters, list)
-        return "?" + "&".join(
-            [
-                f"{v.get('name')}={MockRequest.get_value_as_str(v.get('values'))}"
-                for v in query_parameters
-            ]
-        )
-
-    @staticmethod
-    def get_value_as_str(values: List[Any] | None) -> str:
-        if values is not None:
-            assert isinstance(values, list)
-            return ",".join([str(v) for v in values])
-        return ""
