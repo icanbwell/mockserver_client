@@ -172,7 +172,6 @@ def mock_single_request(
             timing=times(1),
             file_path=file_path,
         )
-        print(f"Mocking: POST {mock_client.base_url}{path}: {json.dumps(fhir_request)}")
     else:
         if not relative_path:
             id_ = fhir_request["id"]
@@ -195,8 +194,6 @@ def mock_single_request(
                 timing=times(1),
                 file_path=file_path,
             )
-
-        print(f"Mocking: GET {mock_client.base_url}{path}{query_string or ''}")
 
 
 def mock_bundle_request(
@@ -246,9 +243,6 @@ def mock_bundle_request(
             timing=times(1),
             file_path=file_path,
         )
-        print(
-            f"Mocking Bundle: POST {mock_client.base_url}{path}: {json.dumps(fhir_request)}"
-        )
     else:
         if not relative_path:
             id_ = fhir_request["id"]
@@ -271,8 +265,6 @@ def mock_bundle_request(
                 timing=times(1),
                 file_path=file_path,
             )
-
-        print(f"Mocking Bundle: GET {mock_client.base_url}{path}{query_string or ''}")
 
 
 # noinspection PyPep8Naming
@@ -310,7 +302,6 @@ def load_mock_fhir_everything_requests_from_folder(
                 timing=times(1),
                 file_path=file_path,
             )
-            print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
 
 
@@ -364,7 +355,6 @@ def load_mock_fhir_everything_batch_requests_from_folder(
         timing=times(1),
         file_path=files[0] if files else None,
     )
-    print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
 
 
@@ -432,7 +422,6 @@ def load_mock_elasticsearch_requests_from_folder(
                 timing=times(1),
                 file_path=file_path,
             )
-            print(f"Mocking: POST {mock_client.base_url}{path}")
     return files
 
 
@@ -463,7 +452,6 @@ def load_mock_source_api_responses_from_folder(
                 timing=times(1),
                 file_path=file_path,
             )
-            print(f"Mocking: GET {mock_client.base_url}{path}")
     return files
 
 
@@ -534,5 +522,4 @@ def load_mock_source_api_json_responses(
                 timing=times(1),
                 file_path=file_path,
             )
-            print(f"Mocking {mock_client.base_url}{path}: {request_parameters}")
     return files

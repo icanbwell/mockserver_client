@@ -28,6 +28,7 @@ from ._timing import _Timing
 from .match_request_result import MatchRequestResult
 from .mock_expectation import MockExpectation
 from .mock_request import MockRequest
+from .mock_request_logger import MockRequestLogger
 from .mock_request_response import MockRequestResponse
 from .mock_response import MockResponse
 from .mockserver_verify_exception import MockServerVerifyException
@@ -143,6 +144,12 @@ class MockServerFriendlyClient(object):
                 index=len(self.expectations),
                 file_path=file_path,
             )
+        )
+        MockRequestLogger.log(
+            file_path=file_path,
+            base_url=self.base_url,
+            request=request,
+            response=response,
         )
 
     def expect_files_as_requests(
