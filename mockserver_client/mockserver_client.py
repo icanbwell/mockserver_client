@@ -65,7 +65,10 @@ class MockServerFriendlyClient(object):
         url = "{}/{}".format(self.base_url, command)
         if query_string:
             url += "?" + query_string
-        return put(url, data=data)
+        try:
+            return put(url, data=data)
+        except Exception as e:
+            raise Exception(f"Error calling {url}: {e}")
 
     def clear(self, path: str) -> None:
         """
