@@ -166,7 +166,7 @@ def mock_single_request(
             request=mock_request(
                 method="POST",
                 path=path,
-                body=json_equals([fhir_request]),
+                body=json_equals(fhir_request),
             ),
             response=mock_response(body=payload),
             timing=times(1),
@@ -237,7 +237,7 @@ def mock_bundle_request(
             request=mock_request(
                 method="POST",
                 path=path,
-                body=json_equals([fhir_request]),
+                body=json_equals(fhir_request),
             ),
             response=mock_response(body=payload),
             timing=times(1),

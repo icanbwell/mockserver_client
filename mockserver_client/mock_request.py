@@ -120,11 +120,10 @@ class MockRequest:
         assert False, f"body is in unexpected type: {type(body)}"
 
     def __str__(self) -> str:
-        return (
-            f"({self.index}) {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}: "
-            f"{self.json_list}" + f" ({self.file_path})"
-            if self.file_path
-            else ""
+        return f"({self.index})" f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}" + (
+            f": {self.json_list}" if self.json_list else ""
+        ) + (
+            f" from ({self.file_path})" if self.file_path else ""
         )
 
     @staticmethod
