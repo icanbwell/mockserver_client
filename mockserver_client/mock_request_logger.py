@@ -31,7 +31,7 @@ class MockRequestLogger:
         print(
             f"Mocking: {method} {base_url}{path}"
             + (
-                f"?{MockRequestLogger.convert_query_parameters_to_str(query_string_parameters)}"
+                f"{MockRequestLogger.convert_query_parameters_to_str(query_string_parameters)}"
                 if query_string_parameters
                 else ""
             )
