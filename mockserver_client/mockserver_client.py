@@ -429,8 +429,12 @@ class MockServerFriendlyClient(object):
         request_matched = expected_request.method and self.does_request_match(
             request1=expected_request, request2=recorded_request, check_body=False
         )
-        request_id_matched = self.does_id_in_request_match(
-            request1=expected_request, request2=recorded_request
+        request_id_matched = (
+            expected_request.json_list is not None
+            and recorded_request.json_list is not None
+            and self.does_id_in_request_match(
+                request1=expected_request, request2=recorded_request
+            )
         )
         if request_matched or request_id_matched:
             # find all requests that match on url since there can be multiple
@@ -570,8 +574,12 @@ class MockServerFriendlyClient(object):
         )
         if request1_query_string != request2_query_string:
             return False
-        if not MockServerFriendlyClient.does_id_in_request_match(
-            request1=request1, request2=request2
+        if (
+            request1.json_list is not None
+            and request2.json_list is not None
+            and not MockServerFriendlyClient.does_id_in_request_match(
+                request1=request1, request2=request2
+            )
         ):
             return False
         if check_body and not MockServerFriendlyClient.does_request_body_match(
