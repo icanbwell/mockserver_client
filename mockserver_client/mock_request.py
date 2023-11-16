@@ -93,7 +93,7 @@ class MockRequest:
             return MockRequest.parse_body(body=json.loads(body), headers=headers)
 
         if isinstance(body, dict):
-            if MockRequest.is_form_urlencoded(body, headers):
+            if MockRequest.is_request_content_type_form_urlencoded(body, headers):
                 return [MockRequest.convert_query_parameters_to_dict(body["string"])]
             else:
                 return [body]
@@ -115,7 +115,7 @@ class MockRequest:
         assert False, f"body is in unexpected type: {type(body)}"
 
     @staticmethod
-    def is_form_urlencoded(body: Dict[str, Any], headers: Optional[List[Dict[str, Any]]]) -> bool:
+    def is_request_content_type_form_urlencoded(body: Dict[str, Any], headers: Optional[List[Dict[str, Any]]]) -> bool:
         """
             check the body and headers to see if this is a form urlencoded request, it is
             the body contains "string" and the headers has Content-Type of "application/x-www-form-urlencoded"
