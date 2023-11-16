@@ -116,8 +116,10 @@ class MockRequest:
 
     @staticmethod
     def is_form_urlencoded(body: Dict[str, Any], headers: Optional[List[Dict[str, Any]]]) -> bool:
-        # if the body contains "string" and headers has content-type of "application/x-www-form-urlencoded" return True
-        # look through the list of headers to see if any match the content-type
+        """
+            check the body and headers to see if this is a form urlencoded request, it is
+            the body contains "string" and the headers has Content-Type of "application/x-www-form-urlencoded"
+        """
         if body and "string" in body and headers:
             # sometimes headers is a list[dict] and sometimes a dict
             headers_dict = headers[0] if isinstance(headers, list) else headers
