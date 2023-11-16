@@ -1,0 +1,12 @@
+ {
+  "request_parameters": {
+    "method": "POST",
+    "path": "api/v1.0/update_token_status",
+    "body": {
+      "member_id": "xy18376",
+      "service_slug": "2222a",
+      "status": "Retrieving Data"
+    }
+  },
+  "request_result": {}
+}

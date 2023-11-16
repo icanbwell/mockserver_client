@@ -1,0 +1,14 @@
+{
+  "request_parameters": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": [ "application/x-www-form-urlencoded" ]
+    },
+    "body": {
+      "type": "string",
+      "string": "member_id=12345&status=active"
+    }
+  },
+  "request_result": {
+  }
+}

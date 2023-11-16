@@ -93,12 +93,7 @@ class MockRequest:
             return MockRequest.parse_body(body=json.loads(body), headers=headers)
 
         if isinstance(body, dict):
-            if (
-                body
-                and "string" in body
-                and headers
-                and headers.get("Content-Type") == ["application/x-www-form-urlencoded"]
-            ):
+            if MockRequest.is_request_content_type_form_urlencoded(body, headers):
                 return [MockRequest.convert_query_parameters_to_dict(body["string"])]
             else:
                 return [body]
@@ -118,6 +113,29 @@ class MockRequest:
             ]
 
         assert False, f"body is in unexpected type: {type(body)}"
+
+    @staticmethod
+    def is_request_content_type_form_urlencoded(
+        body: Dict[str, Any],
+        headers: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]],
+    ) -> bool:
+        """
+        check the body and headers to see if this is a form urlencoded request, it is
+        the body contains "string" and the headers has Content-Type of "application/x-www-form-urlencoded"
+        """
+        if body and "string" in body and headers:
+            # sometimes headers is a list[dict] and sometimes a dict
+            headers_dict = headers[0] if isinstance(headers, list) else headers
+            # sometimes headers_dict will be {"name": "Content-Type", "values": ["application/x-www-form-urlencoded"]}
+            # and sometimes {"Content-Type": ["application/x-www-form-urlencoded"]}
+            # fmt: off
+            if "application/x-www-form-urlencoded" in headers_dict.get("Content-Type", []):
+                return True
+            if (headers_dict.get("name") == "Content-Type" 
+                    and "application/x-www-form-urlencoded" in headers_dict.get("values", [])):
+                return True
+            # fmt: on
+        return False
 
     def __str__(self) -> str:
         return f"({self.index})" f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}" + (
