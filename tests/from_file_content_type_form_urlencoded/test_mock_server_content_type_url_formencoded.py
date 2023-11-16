@@ -31,10 +31,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
     matched_response = http.post(
         mock_server_url + "/" + test_name,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={
-            "member_id": "12345",
-            "status": "active"
-        },
+        data={"member_id": "12345", "status": "active"},
     )
     assert matched_response.status_code == 200
 
@@ -48,10 +45,12 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         data={
             "member_id": "xy18376",
             "service_slug": "2222",
-            "status": "Retrieving Data"
+            "status": "Retrieving Data",
         },
     )
-    assert not_found_response.status_code == 404, "mock server x-www-form-urlencoded issue is resolved!"
+    assert (
+        not_found_response.status_code == 404
+    ), "mock server x-www-form-urlencoded issue is resolved!"
 
     # expectation file content_type_form_urlencoded_matched
     # this mocked request is the same as the previous except the service_slug value is now a string due to the
@@ -62,7 +61,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         data={
             "member_id": "xy18376",
             "service_slug": "2222a",
-            "status": "Retrieving Data"
+            "status": "Retrieving Data",
         },
     )
 

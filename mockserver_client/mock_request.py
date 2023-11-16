@@ -7,7 +7,7 @@ from mockserver_client.mock_request_logger import MockRequestLogger
 
 class MockRequest:
     def __init__(
-            self, request: Dict[str, Any], index: int, file_path: Optional[str]
+        self, request: Dict[str, Any], index: int, file_path: Optional[str]
     ) -> None:
         """
         Class for mock requests
@@ -28,9 +28,9 @@ class MockRequest:
             Dict[str, Any]
         ] | None = self.request.get("queryStringParameters")
         assert (
-                not self.querystring_params
-                or isinstance(self.querystring_params, dict)
-                or isinstance(self.querystring_params, list)
+            not self.querystring_params
+            or isinstance(self.querystring_params, dict)
+            or isinstance(self.querystring_params, list)
         ), type(self.querystring_params)
 
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
@@ -51,8 +51,8 @@ class MockRequest:
         raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
             self.body_list[0].get("json")
             if self.body_list is not None
-               and len(self.body_list) > 0
-               and "json" in self.body_list[0]
+            and len(self.body_list) > 0
+            and "json" in self.body_list[0]
             else self.body_list
             if self.body_list is not None and len(self.body_list) > 0
             else None
@@ -70,9 +70,9 @@ class MockRequest:
 
     @staticmethod
     def parse_body(
-            *,
-            body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
-            headers: Optional[Dict[str, Any]],
+        *,
+        body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+        headers: Optional[Dict[str, Any]],
     ) -> Optional[List[Dict[str, Any]]]:
         # body can be either:
         # 0. None
@@ -115,22 +115,26 @@ class MockRequest:
         assert False, f"body is in unexpected type: {type(body)}"
 
     @staticmethod
-    def is_request_content_type_form_urlencoded(body: Dict[str, Any], headers: Optional[List[Dict[str, Any]]]) -> bool:
+    def is_request_content_type_form_urlencoded(
+        body: Dict[str, Any],
+        headers: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]],
+    ) -> bool:
         """
-            check the body and headers to see if this is a form urlencoded request, it is
-            the body contains "string" and the headers has Content-Type of "application/x-www-form-urlencoded"
+        check the body and headers to see if this is a form urlencoded request, it is
+        the body contains "string" and the headers has Content-Type of "application/x-www-form-urlencoded"
         """
         if body and "string" in body and headers:
             # sometimes headers is a list[dict] and sometimes a dict
             headers_dict = headers[0] if isinstance(headers, list) else headers
             # sometimes headers_dict will be {"name": "Content-Type", "values": ["application/x-www-form-urlencoded"]}
             # and sometimes {"Content-Type": ["application/x-www-form-urlencoded"]}
+            # fmt: off
             if "application/x-www-form-urlencoded" in headers_dict.get("Content-Type", []):
                 return True
-            if (headers_dict.get("name") == "Content-Type" and
-                    "application/x-www-form-urlencoded" in headers_dict.get("values")):
+            if (headers_dict.get("name") == "Content-Type" 
+                    and "application/x-www-form-urlencoded" in headers_dict.get("values", [])):
                 return True
-
+            # fmt: on
         return False
 
     def __str__(self) -> str:
@@ -147,7 +151,7 @@ class MockRequest:
 
     def matches_without_body(self, other: "MockRequest") -> bool:
         return (
-                self.method == other.method
-                and self.path == other.path
-                and self.querystring_params == other.querystring_params
+            self.method == other.method
+            and self.path == other.path
+            and self.querystring_params == other.querystring_params
         )
