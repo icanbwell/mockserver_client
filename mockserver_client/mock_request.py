@@ -7,7 +7,7 @@ from mockserver_client.mock_request_logger import MockRequestLogger
 
 class MockRequest:
     def __init__(
-        self, request: Dict[str, Any], index: int, file_path: Optional[str]
+            self, request: Dict[str, Any], index: int, file_path: Optional[str]
     ) -> None:
         """
         Class for mock requests
@@ -28,9 +28,9 @@ class MockRequest:
             Dict[str, Any]
         ] | None = self.request.get("queryStringParameters")
         assert (
-            not self.querystring_params
-            or isinstance(self.querystring_params, dict)
-            or isinstance(self.querystring_params, list)
+                not self.querystring_params
+                or isinstance(self.querystring_params, dict)
+                or isinstance(self.querystring_params, list)
         ), type(self.querystring_params)
 
         self.headers: Optional[Dict[str, Any]] = self.request.get("headers")
@@ -51,8 +51,8 @@ class MockRequest:
         raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
             self.body_list[0].get("json")
             if self.body_list is not None
-            and len(self.body_list) > 0
-            and "json" in self.body_list[0]
+               and len(self.body_list) > 0
+               and "json" in self.body_list[0]
             else self.body_list
             if self.body_list is not None and len(self.body_list) > 0
             else None
@@ -70,9 +70,9 @@ class MockRequest:
 
     @staticmethod
     def parse_body(
-        *,
-        body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
-        headers: Optional[Dict[str, Any]],
+            *,
+            body: Union[str, bytes, Dict[str, Any], List[Dict[str, Any]]],
+            headers: Optional[Dict[str, Any]],
     ) -> Optional[List[Dict[str, Any]]]:
         # body can be either:
         # 0. None
@@ -93,12 +93,7 @@ class MockRequest:
             return MockRequest.parse_body(body=json.loads(body), headers=headers)
 
         if isinstance(body, dict):
-            if (
-                body
-                and "string" in body
-                and headers
-                and headers.get("Content-Type") == ["application/x-www-form-urlencoded"]
-            ):
+            if MockRequest.is_form_urlencoded(body, headers):
                 return [MockRequest.convert_query_parameters_to_dict(body["string"])]
             else:
                 return [body]
@@ -119,6 +114,23 @@ class MockRequest:
 
         assert False, f"body is in unexpected type: {type(body)}"
 
+    @staticmethod
+    def is_form_urlencoded(body: Dict[str, Any], headers: Optional[List[Dict[str, Any]]]) -> bool:
+        # if the body contains "string" and headers has content-type of "application/x-www-form-urlencoded" return True
+        # look through the list of headers to see if any match the content-type
+        if body and "string" in body and headers:
+            # sometimes headers is a list[dict] and sometimes a dict
+            headers_dict = headers[0] if isinstance(headers, list) else headers
+            # sometimes headers_dict will be {"name": "Content-Type", "values": ["application/x-www-form-urlencoded"]}
+            # and sometimes {"Content-Type": ["application/x-www-form-urlencoded"]}
+            if "application/x-www-form-urlencoded" in headers_dict.get("Content-Type", []):
+                return True
+            if (headers_dict.get("name") == "Content-Type" and
+                    "application/x-www-form-urlencoded" in headers_dict.get("values")):
+                return True
+
+        return False
+
     def __str__(self) -> str:
         return f"({self.index})" f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}" + (
             f": {self.json_list}" if self.json_list else ""
@@ -133,7 +145,7 @@ class MockRequest:
 
     def matches_without_body(self, other: "MockRequest") -> bool:
         return (
-            self.method == other.method
-            and self.path == other.path
-            and self.querystring_params == other.querystring_params
+                self.method == other.method
+                and self.path == other.path
+                and self.querystring_params == other.querystring_params
         )
