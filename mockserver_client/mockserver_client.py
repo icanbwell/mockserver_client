@@ -124,7 +124,7 @@ class MockServerFriendlyClient(object):
         response: Dict[str, Any],
         timing: _Timing,
         time_to_live: Any = None,
-        file_path: Optional[str],
+        file_path: Optional[str] = None,
     ) -> None:
         """
         Expect this mock request and reply with the provided mock response

@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.10-slim-bookworm
 
 COPY ${project_root}/Pipfile* ./
 RUN apt-get update && \
