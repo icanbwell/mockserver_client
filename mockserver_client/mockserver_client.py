@@ -8,7 +8,7 @@ from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
-import dictdiffer  # type: ignore
+from deepdiff import DeepDiff, grep, Delta
 from requests import put, Response
 
 from mockserver_client.exceptions.mock_server_exception import (
@@ -124,7 +124,7 @@ class MockServerFriendlyClient(object):
         response: Dict[str, Any],
         timing: _Timing,
         time_to_live: Any = None,
-        file_path: Optional[str] = None,
+        file_path: Optional[str],
     ) -> None:
         """
         Expect this mock request and reply with the provided mock response
@@ -589,6 +589,28 @@ class MockServerFriendlyClient(object):
         return True
 
     @staticmethod
+    def get_keys_to_ignore(
+        request1_json_body: List[List[dict[str, Any]]]
+    ) -> Optional[List[str]]:
+        # JSONUnit syntax to ignore elements so look for those in the body of the requests
+        item = "json-unit.ignore-element"
+        # DeepDiff.grep will search the entire object
+        ds = request1_json_body | grep(item)
+        matched_values = ds.get("matched_values")
+        if not matched_values:
+            return None
+        # if matched_values were found, then extract the captured string which is the field we want to ignore in the comparison
+        pattern = r"\['([^']+)\']$"
+        matches = []
+        for value in matched_values:
+            match = re.search(pattern, value)
+            if match:
+                captured_string = match.group(1)
+                matches.append(captured_string)
+        matches_distinct = list(set(matches))
+        return matches_distinct
+
+    @staticmethod
     def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
         """
         Does the body of the two specified requests match
@@ -606,9 +628,30 @@ class MockServerFriendlyClient(object):
             return False
         if request1.json_list and request2.json_list:
             # now compare non bundle resources
-            comparison_results = list(
-                dictdiffer.diff(request1.json_list, request2.json_list)
+            # mock-server can use JSONUnit syntax to ignore elements so look for those in the body of the requests
+            ignore_these = MockServerFriendlyClient.get_keys_to_ignore(
+                [request1.json_list, request2.json_list]
             )
+            if ignore_these:
+                comparison_results = list(
+                    DeepDiff(
+                        request1.json_list,
+                        request2.json_list,
+                        ignore_order=True,
+                        exclude_regex_paths=[f"['{value}']" for value in ignore_these],
+                    )
+                )
+                # do the delta without ignoring anything to ensure the ignored fields are present in the body
+                diff_result = Delta(DeepDiff(request1.json_list, request2.json_list))
+                diff_dict = diff_result.diff
+                if diff_dict.get("dictionary_item_added") or diff_dict.get(
+                    "dictionary_item_removed"
+                ):
+                    comparison_results.append(diff_result)
+            else:
+                comparison_results = list(
+                    DeepDiff(request1.json_list, request2.json_list, ignore_order=True)
+                )
             return True if len(comparison_results) == 0 else False
         return True if request1.body_list == request2.body_list else False
 
@@ -700,7 +743,7 @@ class MockServerFriendlyClient(object):
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
         """
-        differences = list(dictdiffer.diff(expected_body_list, actual_body_list))
+        differences = list(DeepDiff(expected_body_list, actual_body_list))
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_body_list,
@@ -720,7 +763,7 @@ class MockServerFriendlyClient(object):
         :param actual_json: json of actual request
         :param expected_json: json of expected request
         """
-        differences = list(dictdiffer.diff(expected_json, actual_json))
+        differences = list(DeepDiff(expected_json, actual_json))
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_json,
