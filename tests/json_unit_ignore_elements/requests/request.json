@@ -10,10 +10,10 @@
           "eventNumber": "1",
           "timestamp": "${json-unit.ignore-element}"
         },
-         {
+        {
           "eventNumber": "2",
           "timestamp": "${json-unit.ignore-element}"
-        }
+        }       
       ]
     }
   },

@@ -40,6 +40,8 @@ class MockServerFriendlyClient(object):
     Based on https://pypi.org/project/mockserver-friendly-client/
     """
 
+    json_unit_ignore_element_string = "json-unit.ignore-element"
+
     def __init__(
         self,
         base_url: str,
@@ -593,9 +595,11 @@ class MockServerFriendlyClient(object):
         request1_json_body: List[List[dict[str, Any]]]
     ) -> Optional[List[str]]:
         # JSONUnit syntax to ignore elements so look for those in the body of the requests
-        item = "json-unit.ignore-element"
+
         # DeepDiff.grep will search the entire object
-        ds = request1_json_body | grep(item)
+        ds = request1_json_body | grep(
+            MockServerFriendlyClient.json_unit_ignore_element_string
+        )
         matched_values = ds.get("matched_values")
         if not matched_values:
             return None
@@ -646,6 +650,8 @@ class MockServerFriendlyClient(object):
                 diff_dict = diff_result.diff
                 if diff_dict.get("dictionary_item_added") or diff_dict.get(
                     "dictionary_item_removed"
+                    or diff_dict.get("iterable_item_added")
+                    or diff_dict.get("iterable_item_removed")
                 ):
                     comparison_results.append(diff_result)
             else:
@@ -743,12 +749,20 @@ class MockServerFriendlyClient(object):
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
         """
-        differences = list(DeepDiff(expected_body_list, actual_body_list))
+        difference_list: List[str] = []
+        differences = dict(DeepDiff(actual_body_list, expected_body_list))
+        if differences.keys():
+            difference_list = (
+                MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
+                    differences
+                )
+            )
+
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_body_list,
                 expected_json=expected_body_list,
-                differences=differences,
+                differences=difference_list,
                 expected_file_path=Path(),
             )
 
@@ -763,14 +777,53 @@ class MockServerFriendlyClient(object):
         :param actual_json: json of actual request
         :param expected_json: json of expected request
         """
-        differences = list(DeepDiff(expected_json, actual_json))
+        # DeepDiff returns a dict with the differences
+        difference_list: List[str] = []
+        differences = dict(DeepDiff(expected_json, actual_json))
+        if differences.keys():
+            difference_list = (
+                MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
+                    differences
+                )
+            )
+
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_json,
                 expected_json=expected_json,
-                differences=differences,
+                differences=difference_list,
                 expected_file_path=Path(),
             )
+
+    @staticmethod
+    def _deep_diff_diff_dict_to_string_list(difference: Dict[str, Any]) -> List[str]:
+        """
+        Converts a DeepDiff diff dictionary to a list of strings
+        """
+        diff_list: List[str] = []
+        for diff_type, diff_value in difference.items():
+            if diff_type == "dictionary_item_added":
+                for diff in diff_value:
+                    diff_list.append(f"dictionary_item_added: {diff}")
+            elif diff_type == "dictionary_item_removed":
+                for diff in diff_value:
+                    diff_list.append(f"dictionary_item_removed: {diff}")
+            elif diff_type == "values_changed":
+                for key, value in diff_value.items():
+                    if (
+                        MockServerFriendlyClient.json_unit_ignore_element_string
+                        not in str(value.values())
+                    ):
+                        diff_list.append(f"values_changed: {key}={value}")
+            elif diff_type == "iterable_item_added":
+                for value in diff_value:
+                    diff_list.append(f"iterable_item_added: {value}")
+            elif diff_type == "iterable_item_removed":
+                for value in diff_value:
+                    diff_list.append(f"iterable_item_removed: {value}")
+            else:
+                diff_list.append(f"{diff_type}={diff_value}")
+        return diff_list
 
     def verify_expectations(
         self, test_name: Optional[str] = None, files: Optional[List[str]] = None

@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 requests = "*"
 types-requests="*"
-dictdiffer = "*"
 deepdiff = "*"
 
 [dev-packages]
