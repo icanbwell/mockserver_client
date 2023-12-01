@@ -1,0 +1,25 @@
+{
+  "request_parameters": {
+    "method": "POST",
+    "body": {
+      "client_id": "unitypoint_bwell",
+      "client_secret": "fake_client_secret",
+      "grant_type": "client_credentials",
+      "notificationEvent": [
+        {
+          "eventNumber": "1",
+          "timestamp": "${json-unit.ignore-element}"
+        },
+        {
+          "eventNumber": "2",
+          "timestamp": "${json-unit.ignore-element}"
+        }       
+      ]
+    }
+  },
+  "request_result": {
+    "token_type": "bearer",
+    "access_token": "fake access_token",
+    "expires_in": 54000
+  }
+}

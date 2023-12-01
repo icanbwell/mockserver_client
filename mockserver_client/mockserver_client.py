@@ -8,7 +8,7 @@ from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
-import dictdiffer  # type: ignore
+from deepdiff import DeepDiff, grep, Delta
 from requests import put, Response
 
 from mockserver_client.exceptions.mock_server_exception import (
@@ -39,6 +39,8 @@ class MockServerFriendlyClient(object):
     Client for the MockServer
     Based on https://pypi.org/project/mockserver-friendly-client/
     """
+
+    json_unit_ignore_element_string = "json-unit.ignore-element"
 
     def __init__(
         self,
@@ -589,6 +591,30 @@ class MockServerFriendlyClient(object):
         return True
 
     @staticmethod
+    def get_keys_to_ignore(
+        request1_json_body: List[List[dict[str, Any]]]
+    ) -> Optional[List[str]]:
+        # JSONUnit syntax to ignore elements so look for those in the body of the requests
+
+        # DeepDiff.grep will search the entire object
+        ds = request1_json_body | grep(
+            MockServerFriendlyClient.json_unit_ignore_element_string
+        )
+        matched_values = ds.get("matched_values")
+        if not matched_values:
+            return None
+        # if matched_values were found, then extract the captured string which is the field we want to ignore in the comparison
+        pattern = r"\['([^']+)\']$"
+        matches = []
+        for value in matched_values:
+            match = re.search(pattern, value)
+            if match:
+                captured_string = match.group(1)
+                matches.append(captured_string)
+        matches_distinct = list(set(matches))
+        return matches_distinct
+
+    @staticmethod
     def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
         """
         Does the body of the two specified requests match
@@ -606,9 +632,32 @@ class MockServerFriendlyClient(object):
             return False
         if request1.json_list and request2.json_list:
             # now compare non bundle resources
-            comparison_results = list(
-                dictdiffer.diff(request1.json_list, request2.json_list)
+            # mock-server can use JSONUnit syntax to ignore elements so look for those in the body of the requests
+            ignore_these = MockServerFriendlyClient.get_keys_to_ignore(
+                [request1.json_list, request2.json_list]
             )
+            if ignore_these:
+                comparison_results = list(
+                    DeepDiff(
+                        request1.json_list,
+                        request2.json_list,
+                        ignore_order=True,
+                        exclude_regex_paths=[f"['{value}']" for value in ignore_these],
+                    )
+                )
+                # do the delta without ignoring anything to ensure the ignored fields are present in the body
+                diff_result = Delta(DeepDiff(request1.json_list, request2.json_list))
+                diff_dict = diff_result.diff
+                if diff_dict.get("dictionary_item_added") or diff_dict.get(
+                    "dictionary_item_removed"
+                    or diff_dict.get("iterable_item_added")
+                    or diff_dict.get("iterable_item_removed")
+                ):
+                    comparison_results.append(diff_result)
+            else:
+                comparison_results = list(
+                    DeepDiff(request1.json_list, request2.json_list, ignore_order=True)
+                )
             return True if len(comparison_results) == 0 else False
         return True if request1.body_list == request2.body_list else False
 
@@ -700,12 +749,20 @@ class MockServerFriendlyClient(object):
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
         """
-        differences = list(dictdiffer.diff(expected_body_list, actual_body_list))
+        difference_list: List[str] = []
+        differences = dict(DeepDiff(actual_body_list, expected_body_list))
+        if differences.keys():
+            difference_list = (
+                MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
+                    differences
+                )
+            )
+
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_body_list,
                 expected_json=expected_body_list,
-                differences=differences,
+                differences=difference_list,
                 expected_file_path=Path(),
             )
 
@@ -720,14 +777,53 @@ class MockServerFriendlyClient(object):
         :param actual_json: json of actual request
         :param expected_json: json of expected request
         """
-        differences = list(dictdiffer.diff(expected_json, actual_json))
+        # DeepDiff returns a dict with the differences
+        difference_list: List[str] = []
+        differences = dict(DeepDiff(expected_json, actual_json))
+        if differences.keys():
+            difference_list = (
+                MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
+                    differences
+                )
+            )
+
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
                 actual_json=actual_json,
                 expected_json=expected_json,
-                differences=differences,
+                differences=difference_list,
                 expected_file_path=Path(),
             )
+
+    @staticmethod
+    def _deep_diff_diff_dict_to_string_list(difference: Dict[str, Any]) -> List[str]:
+        """
+        Converts a DeepDiff diff dictionary to a list of strings
+        """
+        diff_list: List[str] = []
+        for diff_type, diff_value in difference.items():
+            if diff_type == "dictionary_item_added":
+                for diff in diff_value:
+                    diff_list.append(f"dictionary_item_added: {diff}")
+            elif diff_type == "dictionary_item_removed":
+                for diff in diff_value:
+                    diff_list.append(f"dictionary_item_removed: {diff}")
+            elif diff_type == "values_changed":
+                for key, value in diff_value.items():
+                    if (
+                        MockServerFriendlyClient.json_unit_ignore_element_string
+                        not in str(value.values())
+                    ):
+                        diff_list.append(f"values_changed: {key}={value}")
+            elif diff_type == "iterable_item_added":
+                for value in diff_value:
+                    diff_list.append(f"iterable_item_added: {value}")
+            elif diff_type == "iterable_item_removed":
+                for value in diff_value:
+                    diff_list.append(f"iterable_item_removed: {value}")
+            else:
+                diff_list.append(f"{diff_type}={diff_value}")
+        return diff_list
 
     def verify_expectations(
         self, test_name: Optional[str] = None, files: Optional[List[str]] = None
