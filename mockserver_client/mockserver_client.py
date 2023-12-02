@@ -648,8 +648,9 @@ class MockServerFriendlyClient(object):
                 # do the delta without ignoring anything to ensure the ignored fields are present in the body
                 diff_result = Delta(DeepDiff(request1.json_list, request2.json_list))
                 diff_dict = diff_result.diff
-                if diff_dict.get("dictionary_item_added") or diff_dict.get(
-                    "dictionary_item_removed"
+                if (
+                    diff_dict.get("dictionary_item_added")
+                    or diff_dict.get("dictionary_item_removed")
                     or diff_dict.get("iterable_item_added")
                     or diff_dict.get("iterable_item_removed")
                 ):
