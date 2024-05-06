@@ -172,6 +172,37 @@ def mock_single_request(
             timing=times(1),
             file_path=file_path,
         )
+    elif method == "PUT":
+        id_ = fhir_request["id"]
+        # noinspection PyPep8Naming
+        resourceType = fhir_request["resourceType"]
+        path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}"
+
+        payload = (
+            json.dumps(
+                [
+                    {
+                        "id": id_,
+                        "updated": True,
+                        "created": False,
+                        "resourceType": resourceType,
+                    }
+                ]
+            )
+            if not response_body
+            else response_body
+        )
+
+        mock_client.expect(
+            request=mock_request(
+                method="PUT",
+                path=path,
+                body=json_equals(fhir_request),
+            ),
+            response=mock_response(body=payload),
+            timing=times(1),
+            file_path=file_path,
+        )
     else:
         if not relative_path:
             id_ = fhir_request["id"]
