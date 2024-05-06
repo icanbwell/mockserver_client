@@ -183,8 +183,8 @@ def mock_single_request(
                 [
                     {
                         "id": id_,
-                        "updated": False,
-                        "created": True,
+                        "updated": True,
+                        "created": False,
                         "resourceType": resourceType,
                     }
                 ]
