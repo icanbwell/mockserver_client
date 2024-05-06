@@ -177,7 +177,8 @@ def mock_single_request(
         # noinspection PyPep8Naming
         resourceType = fhir_request["resourceType"]
         path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/{id_}"
-        payload: str = (
+
+        payload = (
             json.dumps(
                 [
                     {
@@ -191,6 +192,7 @@ def mock_single_request(
             if not response_body
             else response_body
         )
+
         mock_client.expect(
             request=mock_request(
                 method="PUT",
