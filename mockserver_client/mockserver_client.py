@@ -40,19 +40,19 @@ class MockServerFriendlyClient(object):
     Based on https://pypi.org/project/mockserver-friendly-client/
     """
 
-    json_unit_ignore_element_string = "json-unit.ignore-element"
-
     def __init__(
         self,
         base_url: str,
         log_all_requests_to_folder: str | Path | None = None,
         logger: Optional[Logger] = None,
+        ignore_timestamp_field: Optional[bool] = False,
     ) -> None:
         """
         Client for the MockServer
         Based on https://pypi.org/project/mockserver-friendly-client/
 
         :param base_url: base url to use
+        :param ignore_timestamp_field: if True then any fields named 'timestamp' in the request body will have their value ignored. the diff will still check to ensure the element exists
         """
         self.base_url: str = base_url
         self.expectations: List[MockExpectation] = []
@@ -60,6 +60,7 @@ class MockServerFriendlyClient(object):
         if not logger:
             self.logger.setLevel(os.environ.get("LOGLEVEL") or logging.INFO)
         self.log_all_requests_to_folder: str | Path | None = log_all_requests_to_folder
+        self.ignore_timestamp_field: Optional[bool] = ignore_timestamp_field
 
     def _call(
         self, command: str, data: Any = None, query_string: Optional[str] = None
@@ -457,7 +458,8 @@ class MockServerFriendlyClient(object):
                 r
                 for r in unmatched_requests
                 if self.does_request_match(
-                    request1=r, request2=recorded_request, check_body=True
+                    request1=r, request2=recorded_request, check_body=True,
+                    ignore_timestamp_field=self.ignore_timestamp_field
                 )
             ]
             if expected_request.json_list:
@@ -473,7 +475,9 @@ class MockServerFriendlyClient(object):
                 )
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
-                self.compare_request_bodies_json(actual_body_json, expected_body_json)
+                self.compare_request_bodies_json(actual_body_json,
+                                                 expected_body_json,
+                                                 ignore_timestamp_field=self.ignore_timestamp_field)
             elif expected_request.body_list:
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
@@ -530,6 +534,7 @@ class MockServerFriendlyClient(object):
             request1=expected_request,
             request2=recorded_request,
             check_body=True,
+            ignore_timestamp_field=self.ignore_timestamp_field
         ):
             matching_request = recorded_request
             # remove request from unmatched_requests
@@ -550,7 +555,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_request_match(
-        request1: MockRequest, request2: MockRequest, check_body: bool
+        request1: MockRequest, request2: MockRequest, check_body: bool, ignore_timestamp_field: Optional[bool] = False
     ) -> bool:
         """
         Does request1 match request2
@@ -558,6 +563,7 @@ class MockServerFriendlyClient(object):
         :param request1: request 1
         :param request2: request 2
         :param check_body: whether to match the body or not
+        :param ignore_timestamp_field: whether to ignore timestamp field in a request body
         :return: whether the two requests match
         """
         if request1.method != request2.method:
@@ -585,42 +591,21 @@ class MockServerFriendlyClient(object):
         ):
             return False
         if check_body and not MockServerFriendlyClient.does_request_body_match(
-            request1=request1, request2=request2
+            request1=request1, request2=request2, ignore_timestamp_field=ignore_timestamp_field
         ):
             return False
         return True
 
     @staticmethod
-    def get_keys_to_ignore(
-        request1_json_body: List[List[dict[str, Any]]]
-    ) -> Optional[List[str]]:
-        # JSONUnit syntax to ignore elements so look for those in the body of the requests
-
-        # DeepDiff.grep will search the entire object
-        ds = request1_json_body | grep(
-            MockServerFriendlyClient.json_unit_ignore_element_string
-        )
-        matched_values = ds.get("matched_values")
-        if not matched_values:
-            return None
-        # if matched_values were found, then extract the captured string which is the field we want to ignore in the comparison
-        pattern = r"\['([^']+)\']$"
-        matches = []
-        for value in matched_values:
-            match = re.search(pattern, value)
-            if match:
-                captured_string = match.group(1)
-                matches.append(captured_string)
-        matches_distinct = list(set(matches))
-        return matches_distinct
-
-    @staticmethod
-    def does_request_body_match(request1: MockRequest, request2: MockRequest) -> bool:
+    def does_request_body_match(request1: MockRequest,
+                                request2: MockRequest,
+                                ignore_timestamp_field: Optional[bool] = False) -> bool:
         """
         Does the body of the two specified requests match
 
         :param request1: request 1
         :param request2: request 2
+        :param ignore_timestamp_field: whether to ignore timestamp field in a request body
         :return: whether the body of the two specified requests match
         :rtype:
         """
@@ -632,33 +617,9 @@ class MockServerFriendlyClient(object):
             return False
         if request1.json_list and request2.json_list:
             # now compare non bundle resources
-            # mock-server can use JSONUnit syntax to ignore elements so look for those in the body of the requests
-            ignore_these = MockServerFriendlyClient.get_keys_to_ignore(
-                [request1.json_list, request2.json_list]
-            )
-            if ignore_these:
-                comparison_results = list(
-                    DeepDiff(
-                        request1.json_list,
-                        request2.json_list,
-                        ignore_order=True,
-                        exclude_regex_paths=[f"['{value}']" for value in ignore_these],
-                    )
-                )
-                # do the delta without ignoring anything to ensure the ignored fields are present in the body
-                diff_result = Delta(DeepDiff(request1.json_list, request2.json_list))
-                diff_dict = diff_result.diff
-                if (
-                    diff_dict.get("dictionary_item_added")
-                    or diff_dict.get("dictionary_item_removed")
-                    or diff_dict.get("iterable_item_added")
-                    or diff_dict.get("iterable_item_removed")
-                ):
-                    comparison_results.append(diff_result)
-            else:
-                comparison_results = list(
-                    DeepDiff(request1.json_list, request2.json_list, ignore_order=True)
-                )
+            comparison_results = list(MockServerFriendlyClient.compare_dicts(request1.json_list,
+                                                                             request2.json_list,
+                                                                             ignore_timestamp_field))
             return True if len(comparison_results) == 0 else False
         return True if request1.body_list == request2.body_list else False
 
@@ -742,6 +703,7 @@ class MockServerFriendlyClient(object):
     def compare_request_bodies(
         actual_body_list: Optional[List[Dict[str, Any]]],
         expected_body_list: Optional[List[Dict[str, Any]]],
+        ignore_timestamp_field: Optional[bool] = False
     ) -> None:
         """
         Compares the bodies of the two requests and raises an exception with detailed diff if they don't match
@@ -749,9 +711,10 @@ class MockServerFriendlyClient(object):
 
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
+        :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
         """
         difference_list: List[str] = []
-        differences = dict(DeepDiff(actual_body_list, expected_body_list))
+        differences = MockServerFriendlyClient.compare_dicts(actual_body_list, expected_body_list, ignore_timestamp_field)
         if differences.keys():
             difference_list = (
                 MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
@@ -771,16 +734,18 @@ class MockServerFriendlyClient(object):
     def compare_request_bodies_json(
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
+        ignore_timestamp_field: Optional[bool] = False
     ) -> None:
         """
         Compares the JSON bodies of the two requests and raises an exception with detailed diff if they don't match
 
         :param actual_json: json of actual request
         :param expected_json: json of expected request
+        :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
         """
         # DeepDiff returns a dict with the differences
         difference_list: List[str] = []
-        differences = dict(DeepDiff(expected_json, actual_json))
+        differences = MockServerFriendlyClient.compare_dicts(expected_json, actual_json, ignore_timestamp_field)
         if differences.keys():
             difference_list = (
                 MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
@@ -797,6 +762,36 @@ class MockServerFriendlyClient(object):
             )
 
     @staticmethod
+    def compare_dicts(dict_1: List[Dict[str, Any]],
+                       dict_2: List[Dict[str, Any]],
+                       ignore_timestamp_field: Optional[bool] = False):
+
+        if ignore_timestamp_field:
+            comparison_results = DeepDiff(
+                    dict_1,
+                    dict_2,
+                    ignore_order=True,
+                    exclude_regex_paths=[r".*\['timestamp'\]"],
+                )
+
+            # do the delta without ignoring anything to ensure the ignored fields are present in the body
+            diff_result = Delta(DeepDiff(dict_1, dict_2))
+            diff_dict = diff_result.diff
+            if (
+                    diff_dict.get("dictionary_item_added")
+                    or diff_dict.get("dictionary_item_removed")
+                    or diff_dict.get("iterable_item_added")
+                    or diff_dict.get("iterable_item_removed")
+            ):
+                # we only want to know structural changes and not value changes so only add those to the comparison results
+                diff_dict.pop('values_changed')
+                comparison_results.update(diff_dict)
+        else:
+            comparison_results = DeepDiff(dict_1, dict_2, ignore_order=True)
+
+        return dict(comparison_results)
+
+    @staticmethod
     def _deep_diff_diff_dict_to_string_list(difference: Dict[str, Any]) -> List[str]:
         """
         Converts a DeepDiff diff dictionary to a list of strings
@@ -811,11 +806,7 @@ class MockServerFriendlyClient(object):
                     diff_list.append(f"dictionary_item_removed: {diff}")
             elif diff_type == "values_changed":
                 for key, value in diff_value.items():
-                    if (
-                        MockServerFriendlyClient.json_unit_ignore_element_string
-                        not in str(value.values())
-                    ):
-                        diff_list.append(f"values_changed: {key}={value}")
+                    diff_list.append(f"values_changed: {key}={value}")
             elif diff_type == "iterable_item_added":
                 for value in diff_value:
                     diff_list.append(f"iterable_item_added: {value}")

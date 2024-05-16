@@ -7,12 +7,14 @@
       "grant_type": "client_credentials",
       "notificationEvent": [
         {
+          "id": "data-retrieval-start",
           "eventNumber": "1",
-          "timestamp": "${json-unit.ignore-element}"
+          "timestamp": "2024-05-15T23:47:07.090390Z"
         },
         {
+          "id": "data-retrieval-end",
           "eventNumber": "2",
-          "timestamp": "${json-unit.ignore-element}"
+          "timestamp": "2024-05-15T23:47:07.090390Z"
         }       
       ]
     }
