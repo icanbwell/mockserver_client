@@ -24,9 +24,9 @@ class MockRequest:
 
         self.method: Optional[str] = self.request.get("method")
         self.path: Optional[str] = self.request.get("path")
-        self.querystring_params: Dict[str, Any] | List[
-            Dict[str, Any]
-        ] | None = self.request.get("queryStringParameters")
+        self.querystring_params: Dict[str, Any] | List[Dict[str, Any]] | None = (
+            self.request.get("queryStringParameters")
+        )
         assert (
             not self.querystring_params
             or isinstance(self.querystring_params, dict)
@@ -53,9 +53,11 @@ class MockRequest:
             if self.body_list is not None
             and len(self.body_list) > 0
             and "json" in self.body_list[0]
-            else self.body_list
-            if self.body_list is not None and len(self.body_list) > 0
-            else None
+            else (
+                self.body_list
+                if self.body_list is not None and len(self.body_list) > 0
+                else None
+            )
         )
 
         self.json_list: Optional[List[Dict[str, Any]]] = (

@@ -20,8 +20,7 @@ def test_mock_server_ignore_timestamp_field() -> None:
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
-        base_url=mock_server_url,
-        ignore_timestamp_field=True
+        base_url=mock_server_url, ignore_timestamp_field=True
     )
 
     mock_client.clear(f"/{test_name}/*.*")
@@ -39,8 +38,16 @@ def test_mock_server_ignore_timestamp_field() -> None:
             "client_secret": "fake_client_secret",
             "grant_type": "client_credentials",
             "notificationEvent": [
-                {"id": "data-retrieval-start", "eventNumber": "1", "timestamp": "2023-11-28T00:20:56.347865+00:00"},
-                {"id": "data-retrieval-end", "eventNumber": "2", "timestamp": "2023-11-28T00:20:56.347865+00:00"},
+                {
+                    "id": "data-retrieval-start",
+                    "eventNumber": "1",
+                    "timestamp": "2023-11-28T00:20:56.347865+00:00",
+                },
+                {
+                    "id": "data-retrieval-end",
+                    "eventNumber": "2",
+                    "timestamp": "2023-11-28T00:20:56.347865+00:00",
+                },
             ],
         },
     )
@@ -50,6 +57,7 @@ def test_mock_server_ignore_timestamp_field() -> None:
     except MockServerVerifyException as e:
         print(str(e))
         raise e
+
 
 def test_mock_server_ignore_timestamp_field_is_missing() -> None:
     """
@@ -61,8 +69,7 @@ def test_mock_server_ignore_timestamp_field_is_missing() -> None:
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
-        base_url=mock_server_url,
-        ignore_timestamp_field = True
+        base_url=mock_server_url, ignore_timestamp_field=True
     )
 
     mock_client.clear(f"/{test_name}/*.*")
@@ -127,7 +134,10 @@ def test_mock_server_ignore_timestamp_field_is_missing() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == ["dictionary_item_removed: root[0]['notificationEvent'][1]['timestamp']"]
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+        "dictionary_item_removed: root[0]['notificationEvent'][1]['timestamp']"
+    ]
+
 
 def test_mock_server_ignore_timestamp_element_is_missing() -> None:
     """
@@ -138,9 +148,7 @@ def test_mock_server_ignore_timestamp_element_is_missing() -> None:
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
-        base_url=mock_server_url,
-        ignore_timestamp_field=True
-
+        base_url=mock_server_url, ignore_timestamp_field=True
     )
 
     mock_client.clear(f"/{test_name}/*.*")
@@ -199,7 +207,10 @@ def test_mock_server_ignore_timestamp_element_is_missing() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == ["iterable_item_removed: root[0]['notificationEvent'][1]"]
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+        "iterable_item_removed: root[0]['notificationEvent'][1]"
+    ]
+
 
 def test_mock_server_ignore_timestamp_other_value_changed() -> None:
     """
@@ -210,8 +221,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
-        base_url=mock_server_url,
-        ignore_timestamp_field=True
+        base_url=mock_server_url, ignore_timestamp_field=True
     )
 
     mock_client.clear(f"/{test_name}/*.*")
@@ -229,7 +239,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
                         {
                             "id": "data-connection-status",
                             "url": "https://www.icanbwell.com/codes/data-connection-status",
-                            "valueString": "RETRIEVED"
+                            "valueString": "RETRIEVED",
                         }
                     ],
                     "type": "query-status",
@@ -237,7 +247,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
                         {
                             "id": "data-retrieval-end",
                             "eventNumber": "2",
-                            "timestamp": "2023-01-28T00:20:56.347865+00:00"
+                            "timestamp": "2023-01-28T00:20:56.347865+00:00",
                         }
                     ],
                 }
@@ -267,7 +277,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
                 {
                     "id": "data-connection-status",
                     "url": "https://www.icanbwell.com/codes/data-connection-status",
-                    "valueString": "RETRIEVED"
+                    "valueString": "RETRIEVED",
                 }
             ],
             "type": "query-status",
@@ -275,7 +285,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
                 {
                     "id": "data-retrieval-end",
                     "eventNumber": "2",
-                    "timestamp": "2023-11-28T00:20:56.347865+00:00"
+                    "timestamp": "2023-11-28T00:20:56.347865+00:00",
                 }
             ],
         },
@@ -287,21 +297,22 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [
-        "values_changed: root[0]['grant_type']={'new_value': 'client', 'old_value': 'client_credentials'}"]
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+        "values_changed: root[0]['grant_type']={'new_value': 'client', 'old_value': 'client_credentials'}"
+    ]
+
 
 def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() -> None:
     """
-       test that we get a value_changed error for a difference that is not a timestamp field and a dictionary_item_removed
-       error for a missing timestamp field
+    test that we get a value_changed error for a difference that is not a timestamp field and a dictionary_item_removed
+    error for a missing timestamp field
     """
 
     test_name = "test_mock_server_regex_not_working"
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
-        base_url=mock_server_url,
-        ignore_timestamp_field=True
+        base_url=mock_server_url, ignore_timestamp_field=True
     )
 
     mock_client.clear(f"/{test_name}/*.*")
@@ -319,7 +330,7 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
                         {
                             "id": "data-connection-status",
                             "url": "https://www.icanbwell.com/codes/data-connection-status",
-                            "valueString": "RETRIEVED"
+                            "valueString": "RETRIEVED",
                         }
                     ],
                     "type": "query-status",
@@ -327,7 +338,7 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
                         {
                             "id": "data-retrieval-end",
                             "eventNumber": "2",
-                            "timestamp": "2023-01-28T00:20:56.347865+00:00"
+                            "timestamp": "2023-01-28T00:20:56.347865+00:00",
                         }
                     ],
                 }
@@ -357,16 +368,11 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
                 {
                     "id": "data-connection-status",
                     "url": "https://www.icanbwell.com/codes/data-connection-status",
-                    "valueString": "RETRIEVED"
+                    "valueString": "RETRIEVED",
                 }
             ],
             "type": "query-status",
-            "notificationEvent": [
-                {
-                    "id": "data-retrieval-end",
-                    "eventNumber": "2"
-                }
-            ],
+            "notificationEvent": [{"id": "data-retrieval-end", "eventNumber": "2"}],
         },
     )
     with pytest.raises(MockServerVerifyException) as excinfo:
@@ -376,10 +382,11 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore
         "values_changed: root[0]['grant_type']={'new_value': 'client', 'old_value': 'client_credentials'}",
-        "dictionary_item_removed: root[0]['notificationEvent'][0]['timestamp']"
+        "dictionary_item_removed: root[0]['notificationEvent'][0]['timestamp']",
     ]
+
 
 def test_deep_diff_with_exclude_regex_paths() -> None:
     json_1 = {
@@ -407,27 +414,23 @@ def test_deep_diff_with_exclude_regex_paths() -> None:
         "client_secret": "fake_client_secret",
         "grant_type": "client_credentials",
         "notificationEvent": [
-            {
-                "eventNumber": "1",
-                "timestamp": "2023-11-28T00:20:56.347865+00:00"},
-            {
-                "eventNumber": "2",
-                "timestamp": "2023-11-28T00:20:56.347865+00:00"
-            },
-            {
-                "eventNumber": "3",
-                "timestamp": "2023-11-28T00:21:00.347865+00:00"
-            },
+            {"eventNumber": "1", "timestamp": "2023-11-28T00:20:56.347865+00:00"},
+            {"eventNumber": "2", "timestamp": "2023-11-28T00:20:56.347865+00:00"},
+            {"eventNumber": "3", "timestamp": "2023-11-28T00:21:00.347865+00:00"},
         ],
         "start_timestamp": "2023-11-28T00:20:56.347865+00:00",
     }
 
     diff_result = DeepDiff(
-        json_1,
-        json_2,
-        ignore_order=True,
-        exclude_regex_paths=[r".*\['timestamp'\]"]
+        json_1, json_2, ignore_order=True, exclude_regex_paths=[r".*\['timestamp'\]"]
     )
 
     assert len(diff_result.to_dict().keys()) == 1
-    assert diff_result.to_dict() == {'values_changed': {"root['start_timestamp']": {'new_value': '2023-11-28T00:20:56.347865+00:00', 'old_value': '2023-03-28T00:20:56.347865+00:00'}}}
+    assert diff_result.to_dict() == {
+        "values_changed": {
+            "root['start_timestamp']": {
+                "new_value": "2023-11-28T00:20:56.347865+00:00",
+                "old_value": "2023-03-28T00:20:56.347865+00:00",
+            }
+        }
+    }

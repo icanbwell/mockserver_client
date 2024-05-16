@@ -3,7 +3,7 @@ LANG=en_US.utf-8
 export LANG
 
 Pipfile.lock: Pipfile
-	docker-compose run --rm --name mockserver_client dev pipenv lock --dev
+	docker-compose run --rm --name mockserver_client dev sh -c "rm -f Pipfile.lock && pipenv lock --dev"
 
 .PHONY:devdocker
 devdocker: ## Builds the docker for dev
@@ -36,8 +36,7 @@ run-pre-commit: setup-pre-commit
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
 	docker-compose run --rm --name mockserver_client dev pipenv sync && \
-	make devdocker && \
-	make pipenv-setup
+	make devdocker
 
 .PHONY:tests
 tests: up
@@ -68,6 +67,3 @@ help: ## Show this help.
 	# from https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY:pipenv-setup
-pipenv-setup:devdocker ## Brings up the bash shell in dev docker
-	docker-compose run --rm --name mockserver_client dev pipenv-setup sync --pipfile
