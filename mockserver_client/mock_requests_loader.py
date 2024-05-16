@@ -547,9 +547,11 @@ def load_mock_source_api_json_responses(
 
             mock_client.expect(
                 request=mock_request(path=path, **request_parameters),
-                response=mock_response(body=json.dumps(request_result))
-                if not code
-                else mock_response(code=code),
+                response=(
+                    mock_response(body=json.dumps(request_result))
+                    if not code
+                    else mock_response(code=code)
+                ),
                 timing=times(1),
                 file_path=file_path,
             )

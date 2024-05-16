@@ -33,9 +33,9 @@ class MockServerVerifyException(Exception):
         exception: MockServerException
         for exception in self.exceptions:
             if isinstance(exception, MockServerJsonContentMismatchException):
-                actual_list_or_obj: Optional[
-                    List[Dict[str, Any]]
-                ] = exception.actual_json
+                actual_list_or_obj: Optional[List[Dict[str, Any]]] = (
+                    exception.actual_json
+                )
                 if actual_list_or_obj:
                     for actual in actual_list_or_obj:
                         if "resourceType" in actual and "id" in actual:

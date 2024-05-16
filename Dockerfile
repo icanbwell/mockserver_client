@@ -6,7 +6,7 @@ COPY Pipfile* /src/
 WORKDIR /src
 
 RUN python3 -m pip install --upgrade pip && python -m pip install --no-cache-dir pipenv
-RUN pipenv lock && pipenv sync --dev --system && pipenv-setup sync --pipfile
+RUN pipenv lock && pipenv sync --dev --system
 
 COPY . /src
 
