@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 import requests
 from deepdiff import DeepDiff
+from requests import put
 
 from mockserver_client.mockserver_client import (
     MockServerFriendlyClient,
@@ -14,7 +15,27 @@ from mockserver_client.mockserver_client import (
 from mockserver_client.mockserver_verify_exception import MockServerVerifyException
 
 
-def test_mock_server_ignore_timestamp_field() -> None:
+@pytest.fixture(scope="function")
+def check_active_expectations(request: pytest.FixtureRequest) -> None:
+    mock_server_url = "http://mock-server:1080"
+
+    def finalizer() -> None:
+        active_expectations_response = put(
+            f"{mock_server_url}/retrieve?type=active_expectations"
+        )
+        assert (
+            active_expectations_response.status_code == 200
+        ), "Failed to retrieve active expectations"
+        assert (
+            active_expectations_response.json() == []
+        ), "There are active expectations that were not cleared"
+
+    request.addfinalizer(finalizer)
+
+
+def test_mock_server_ignore_timestamp_field(
+    check_active_expectations: pytest.FixtureRequest,
+) -> None:
     requests_dir: Path = Path(__file__).parent.joinpath("./requests")
     test_name = "test_mock_server"
 
@@ -217,7 +238,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
     test that we only get a value_changed error for a difference that is not a timestamp field
     """
 
-    test_name = "test_mock_server_regex_not_working"
+    test_name = "test_mock_server_ignore_timestamp_other_value_changed"
 
     mock_server_url = "http://mock-server:1080"
     mock_client: MockServerFriendlyClient = MockServerFriendlyClient(
