@@ -120,6 +120,24 @@ class MockServerFriendlyClient(object):
             ),
         )
 
+    def replace_timestamp_with_ignore(
+        self, json_data: Union[Dict[str, Any], List[Any]]
+    ) -> Union[Dict[str, Any], List[Any]]:
+        """
+        replace the value of a field named `timestamp` with `${json-unit.ignore}` so that mockserver will
+        ignore the value when doing a match
+        """
+        if isinstance(json_data, dict):
+            for key, value in json_data.items():
+                if key == "timestamp" and isinstance(value, str):
+                    json_data[key] = "${json-unit.ignore}"
+                elif isinstance(value, (dict, list)):
+                    self.replace_timestamp_with_ignore(value)
+        elif isinstance(json_data, list):
+            for item in json_data:
+                self.replace_timestamp_with_ignore(item)
+        return json_data
+
     def expect(
         self,
         *,
@@ -139,6 +157,10 @@ class MockServerFriendlyClient(object):
         :param time_to_live:
         :param file_path: file path
         """
+        # if timestamp values are being ignored then replace the timestamp value with the json-unit ignore string
+        if self.ignore_timestamp_field:
+            request = self.replace_timestamp_with_ignore(request)  # type: ignore
+
         self.stub(
             request=request, response=response, timing=timing, time_to_live=time_to_live
         )
