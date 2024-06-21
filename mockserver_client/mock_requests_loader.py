@@ -538,11 +538,13 @@ def load_mock_source_api_json_responses(
             try:
                 request_result = content["request_result"]
                 if "statusCode" in request_result:
-                    code = request_result["statusCode"]
+                    code = int(request_result["statusCode"])
                     request_result.pop("statusCode")
                     # If request_result is empty, then add the generic error response
-                    if not request_result:
-                        request_result["error_message"] = f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unable to parse response as JSON')}"
+                    if not request_result and (int(code) >= 400):
+                        request_result["error_message"] = (
+                            f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unable to parse response as JSON')}"
+                        )
 
             except ValueError:
                 raise Exception(
