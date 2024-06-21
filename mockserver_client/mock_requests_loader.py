@@ -4,6 +4,7 @@ from glob import glob
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from mockserver_client.error_messages import common_error_messages
 from mockserver_client.mockserver_client import (
     mock_request,
     mock_response,
@@ -538,6 +539,10 @@ def load_mock_source_api_json_responses(
                 request_result = content["request_result"]
                 if "statusCode" in request_result:
                     code = request_result["statusCode"]
+                    request_result.pop("statusCode")
+                    # If request_result is empty, then add the generic error response
+                    if not request_result:
+                        request_result["error_message"] = f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unable to parse response as JSON')}"
 
             except ValueError:
                 raise Exception(
@@ -550,7 +555,7 @@ def load_mock_source_api_json_responses(
                 response=(
                     mock_response(body=json.dumps(request_result))
                     if not code
-                    else mock_response(code=code)
+                    else mock_response(code=code, body=json.dumps(request_result))
                 ),
                 timing=times(1),
                 file_path=file_path,
