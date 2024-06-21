@@ -1,0 +1,16 @@
+{
+  "request_parameters": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": [ "application/x-www-form-urlencoded" ]
+    },
+    "body": {
+      "type": "string",
+      "string": "claim_id=11111&status=active"
+    }
+  },
+  "request_result": {
+    "statusCode": 404,
+    "error_message": "Data Not Found"
+  }
+}

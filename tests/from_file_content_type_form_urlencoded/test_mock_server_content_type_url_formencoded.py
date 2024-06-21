@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import requests
@@ -66,6 +67,28 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
     )
 
     assert matched_response.status_code == 200
+
+    # mock request to validate that in case of error response, the api is mocked and error_view is
+    # populated properly without the pre-defined map
+    matched_response = http.post(
+        mock_server_url + "/" + test_name,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={"claim_id": "11111", "status": "active"},
+    )
+    assert matched_response.status_code == 404
+    assert json.loads(matched_response._content) == {"error_message": "Data Not Found"}  # type: ignore
+
+    # mock request to validate that in case of error response, the api is mocked and error_view is
+    # populated properly using the pre-defined map
+    matched_response = http.post(
+        mock_server_url + "/" + test_name,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={"claim_id": "11111", "status": "inactive"},
+    )
+    assert matched_response.status_code == 403
+    assert json.loads(matched_response._content) == {  # type: ignore
+        "error_message": "HTTP 403 ERROR: You do not have permission to access this resource"
+    }
 
     try:
         mock_client.verify_expectations(test_name=test_name)
