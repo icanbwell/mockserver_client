@@ -543,7 +543,7 @@ def load_mock_source_api_json_responses(
                     # If request_result is empty, then add the generic error response
                     if not request_result and (int(code) >= 400):
                         request_result["error_message"] = (
-                            f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unable to parse response as JSON')}"
+                            f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unknown status code')}"
                         )
 
             except ValueError:
