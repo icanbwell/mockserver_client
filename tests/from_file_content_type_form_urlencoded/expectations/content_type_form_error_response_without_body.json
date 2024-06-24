@@ -1,0 +1,15 @@
+{
+  "request_parameters": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": [ "application/x-www-form-urlencoded" ]
+    },
+    "body": {
+      "type": "string",
+      "string": "claim_id=11111&status=inactive"
+    }
+  },
+  "request_result": {
+    "statusCode": 403
+  }
+}
