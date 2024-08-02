@@ -503,6 +503,8 @@ def load_mock_source_api_json_responses(
     :param add_file_name: http://{mock_server_url}/{url_prefix}/{add_file_name}...
     :param url_suffix: http://{mock_server_url}/{url_prefix}/{add_file_name}/{url_suffix}?
     """
+
+    print("load_mock_source_api_json_responses: hello")
     file_path: str
     files: List[str] = sorted(glob(str(folder.joinpath("**/*.json")), recursive=True))
     for file_path in files:
@@ -534,9 +536,9 @@ def load_mock_source_api_json_responses(
                 if url_suffix:
                     path = f"{path}/{url_suffix}"
 
-            code: Optional[int] = None
             try:
                 request_result = content["request_result"]
+                response_parameters: Dict[str, Any] = {}
                 if "statusCode" in request_result:
                     code = int(request_result["statusCode"])
                     request_result.pop("statusCode")
@@ -545,21 +547,33 @@ def load_mock_source_api_json_responses(
                         request_result["error_message"] = (
                             f"HTTP {code} ERROR: {common_error_messages.get(int(code), 'Unknown status code')}"
                         )
-
+                    response_parameters["code"] = code
+                if "headers" in request_result:
+                    headers = request_result["headers"]
+                    assert isinstance(
+                        headers, dict
+                    ), f"headers should be a dictionary: {headers}"
+                    request_result.pop("headers")
+                    response_parameters["headers"] = headers
+                if "body" in request_result:
+                    raw_body = request_result["body"]
+                    assert isinstance(
+                        raw_body, str
+                    ), f"body should be a string: {raw_body}"
+                    response_parameters["body"] = raw_body
+                else:
+                    response_parameters["body"] = json.dumps(request_result)
+                # now mock it
+                mock_client.expect(
+                    request=mock_request(path=path, **request_parameters),
+                    response=(mock_response(**response_parameters)),
+                    timing=times(1),
+                    file_path=file_path,
+                )
             except ValueError:
                 raise Exception(
                     "`request_result` key not found. "
                     + "It is supposed to contain the expected result of the request function."
                 )
 
-            mock_client.expect(
-                request=mock_request(path=path, **request_parameters),
-                response=(
-                    mock_response(body=json.dumps(request_result))
-                    if not code
-                    else mock_response(code=code, body=json.dumps(request_result))
-                ),
-                timing=times(1),
-                file_path=file_path,
-            )
     return files
