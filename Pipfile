@@ -9,14 +9,23 @@ types-requests="*"
 deepdiff = "*"
 
 [dev-packages]
-setuptools=">=61.3.1"
-wheel=">=0.37.1"
-twine=">=3.8.0"
-pre-commit=">=2.20.0"
-autoflake=">=1.7.7"
-mypy = "==1.9.0"
-pytest = ">=7.4.3"
-black = ">=24.3.0"
+# setuptools is needed for building the package
+setuptools=">=72.0.0"
+# wheel is needed for building the package
+wheel = ">=0.43.0"
+# twine is needed for uploading the package to PyPI
+twine=">=5.1.1"
+# pre-commit is needed for running code quality checks
+pre-commit=">=3.7.1"
+# autoflake is needed for removing unused imports
+autoflake=">=2.3.1"
+# mypy is needed for type checking
+mypy = ">=1.10.1"
+# pytest is needed for running tests
+pytest = ">=8.2.2"
+# black is needed for formatting code
+black = ">=24.4.2"
+
 
 [requires]
 python_version = "3.10"
