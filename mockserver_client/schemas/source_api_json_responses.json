@@ -55,6 +55,12 @@
             }
           ]
         },
+        "chunks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "statusCode": {
           "type": "integer"
         },

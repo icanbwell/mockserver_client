@@ -487,6 +487,15 @@ def load_mock_source_api_responses_from_folder(
     return files
 
 
+def calculate_chunked_response(chunks: List[str]) -> List[str]:
+    chunked_body = []
+    for chunk in chunks:
+        chunk_size = format(len(chunk), "x")  # Calculate chunk size in hexadecimal
+        chunked_body.append(f"{chunk_size}\r\n{chunk}\r\n")
+    chunked_body.append("0\r\n\r\n")  # End of chunks
+    return chunked_body
+
+
 def load_mock_source_api_json_responses(
     folder: Path,
     mock_client: MockServerFriendlyClient,
@@ -561,6 +570,14 @@ def load_mock_source_api_json_responses(
                         raw_body, str
                     ), f"body should be a string: {raw_body}"
                     response_parameters["body"] = raw_body
+                elif "chunks" in request_result:
+                    chunks = request_result["chunks"]
+                    assert isinstance(
+                        chunks, list
+                    ), f"chunks should be a list: {chunks}"
+                    response_parameters["body"] = "".join(
+                        calculate_chunked_response(chunks)
+                    )
                 else:
                     response_parameters["body"] = json.dumps(request_result)
                 # now mock it
