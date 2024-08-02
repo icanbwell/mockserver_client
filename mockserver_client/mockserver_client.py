@@ -162,7 +162,10 @@ class MockServerFriendlyClient(object):
             request = self.replace_timestamp_with_ignore(request)  # type: ignore
 
         self.stub(
-            request=request, response=response, timing=timing, time_to_live=time_to_live
+            request=request,
+            response=response,
+            timing=timing,
+            time_to_live=time_to_live,
         )
         self.expectations.append(
             MockExpectation(
@@ -1077,6 +1080,7 @@ def mock_request(
     )
 
 
+# noinspection PyPep8Naming
 def mock_response(
     code: Optional[int] = None,
     body: Optional[Union[str, Dict[str, Any]]] = None,
@@ -1084,6 +1088,7 @@ def mock_response(
     cookies: Optional[str] = None,
     delay: Optional[str] = None,
     reason: Optional[str] = None,
+    connectionOptions: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Specifies the mock response for a mock request
@@ -1094,8 +1099,9 @@ def mock_response(
     :param headers: headers to return in mock response
     :param cookies: cookies to return in mock response
     :param delay: delay to use before returning response
-    :param reason: reason phrase to return in mock response
-    :return: mock response
+    :param reason: reason phrase to return in mock_response
+    :param connectionOptions: connection options to return in mock_response
+    :return: mock_response
     """
     return _non_null_options_to_dict(
         _Option("statusCode", code),
@@ -1104,6 +1110,7 @@ def mock_response(
         _Option("headers", headers, formatter=_to_named_values_list),
         _Option("delay", delay, formatter=_to_delay),
         _Option("cookies", cookies),
+        _Option("connectionOptions", connectionOptions),
     )
 
 

@@ -575,9 +575,10 @@ def load_mock_source_api_json_responses(
                     assert isinstance(
                         chunks, list
                     ), f"chunks should be a list: {chunks}"
-                    response_parameters["body"] = "".join(
-                        calculate_chunked_response(chunks)
-                    )
+                    response_parameters["body"] = "".join(chunks)
+                    if not response_parameters.get("connectionOptions"):
+                        response_parameters["connectionOptions"] = {}
+                    response_parameters["connectionOptions"]["chunkSize"] = 1
                 else:
                     response_parameters["body"] = json.dumps(request_result)
                 # now mock it

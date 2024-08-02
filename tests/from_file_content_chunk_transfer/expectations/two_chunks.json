@@ -16,5 +16,8 @@
       "Content-Type": "application/fhir+ndjson",
       "Transfer-Encoding": "chunked"
     }
+  },
+  "connectionOptions": {
+    "chunkSize": 100
   }
 }

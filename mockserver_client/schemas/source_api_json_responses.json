@@ -75,61 +75,61 @@
         },
         "reason": {
           "type": "string"
+        },
+        "connectionOptions": {
+          "type": "object",
+          "properties": {
+            "suppressContentLengthHeader": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "contentLengthHeaderOverride": {
+              "type": "integer",
+              "nullable": true
+            },
+            "suppressConnectionHeader": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "chunkSize": {
+              "type": "integer",
+              "nullable": true
+            },
+            "keepAliveOverride": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "closeSocket": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "closeSocketDelay": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "integer"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "milliseconds",
+                    "seconds",
+                    "minutes",
+                    "hours"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "unit"
+              ],
+              "nullable": true
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": true
-    },
-    "connectionOptions": {
-      "type": "object",
-      "properties": {
-        "suppressContentLengthHeader": {
-          "type": "boolean",
-          "nullable": true
-        },
-        "contentLengthHeaderOverride": {
-          "type": "integer",
-          "nullable": true
-        },
-        "suppressConnectionHeader": {
-          "type": "boolean",
-          "nullable": true
-        },
-        "chunkSize": {
-          "type": "integer",
-          "nullable": true
-        },
-        "keepAliveOverride": {
-          "type": "boolean",
-          "nullable": true
-        },
-        "closeSocket": {
-          "type": "boolean",
-          "nullable": true
-        },
-        "closeSocketDelay": {
-          "type": "object",
-          "properties": {
-            "value": {
-              "type": "integer"
-            },
-            "unit": {
-              "type": "string",
-              "enum": [
-                "milliseconds",
-                "seconds",
-                "minutes",
-                "hours"
-              ]
-            }
-          },
-          "required": [
-            "value",
-            "unit"
-          ],
-          "nullable": true
-        }
-      },
-      "additionalProperties": false
     }
   },
   "required": [
