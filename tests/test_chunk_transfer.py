@@ -12,11 +12,10 @@ def test_chunk_transfer() -> None:
         "httpRequest": {
             "method": "GET",
             "path": "/test_fhir_client_patient_list_async/Patient",
-            "headers": {"Accept": ["application/fhir+ndjson"]},
         },
         "httpResponse": {
-            "headers": {"Content-Type": ["application/fhir+ndjson"]},
             "body": "1234567890",
+            "headers": {"Transfer-Encoding": "chunked"},
             "connectionOptions": {"chunkSize": 2},
         },
         "id": "77cd67c4-c470-470d-99a8-b1fe85c0c083",
