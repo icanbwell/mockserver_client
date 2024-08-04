@@ -14,18 +14,8 @@ services:
 
   mock-server:
     image: mockserver/mockserver:5.15.0
-    entrypoint: [
-      "java",
-      "-Dfile.encoding=UTF-8",
-      "-cp",
-      "/mockserver-netty-jar-with-dependencies.jar:/libs/*",
-      "-Dmockserver.propertyFile=/config/mockserver.properties",
-      "-Dmockserver.logLevel=DEBUG",
-      "-Dmockserver.maxChunkSize=2",
-      "org.mockserver.cli.Main"
-    ]
+    command: -serverPort 1080
     ports:
       - '1080:1080'
     environment:
       - MOCKSERVER_LIVENESS_HTTP_GET_PATH=/health
-      - MOCKSERVER_MAX_CHUNK_SIZE=2
