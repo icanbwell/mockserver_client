@@ -38,6 +38,7 @@ async def test_chunk_transfer_using_aiohttp() -> None:
         async with session.get(
             mock_server_url + "/" + test_name,
             headers={"Accept": "application/fhir+ndjson"},
+            chunked=True,
         ) as matched_response:
             assert matched_response.status == 200
             assert matched_response.headers["Transfer-Encoding"] == "chunked"
@@ -45,10 +46,15 @@ async def test_chunk_transfer_using_aiohttp() -> None:
             chunk_number = 0
             chunks: List[str] = []
             chunk: bytes
-            async for chunk in matched_response.content.iter_chunked(2):
+            async for (
+                chunk,
+                end_of_http_chunk,
+            ) in matched_response.content.iter_chunks():
                 chunk_number += 1
                 chunk_txt = chunk.decode("utf-8")
-                print(f"{chunk_number}: {chunk_txt}")
+                print(
+                    f"{chunk_number}: {chunk_txt} end_of_http_chunk={end_of_http_chunk}"
+                )
                 chunks.append(chunk_txt)
 
             assert chunk_number == 5
