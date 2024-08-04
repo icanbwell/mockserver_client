@@ -14,7 +14,7 @@
       "Transfer-Encoding": "chunked"
     },
     "connectionOptions": {
-        "chunkSize": 1
+        "chunkSize": 100
     }
   }
 }

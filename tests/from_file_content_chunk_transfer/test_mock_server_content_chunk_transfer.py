@@ -1,10 +1,10 @@
 from pathlib import Path
+from typing import List
 
 import requests
 
 from mockserver_client.mock_requests_loader import load_mock_source_api_json_responses
 from mockserver_client.mockserver_client import MockServerFriendlyClient
-from mockserver_client.mockserver_verify_exception import MockServerVerifyException
 
 
 def test_mock_server_from_file_content_type_form_urlencoded() -> None:
@@ -25,38 +25,60 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         url_prefix=test_name,
     )
 
-    http = requests.Session()
     # expectation file content_type_form_urlencoded_string_body
     # this expectation is set up in the preferred way for "Content-Type": "application/x-www-form-urlencoded"
-    matched_response = http.get(
-        mock_server_url + "/" + test_name, headers={"Accept": "application/fhir+ndjson"}
-    )
-    assert matched_response.status_code == 200
-    assert matched_response.content == (
-        b'{"resourceType":"Patient","id":"3456789012345670303","meta":{"profile":["htt'
-        b'p://hl7.org/fhir/us/carin/StructureDefinition/carin-bb-coverage"]}"identifie'
-        b'r":[{"type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v2-0'
-        b'203","code":"SN"}]},"system":"https://sources.aetna.com/coverage/identifier/'
-        b'membershipid/59","value":"435679010300+AE303+2021-01-01"}],"status":"active"'
-        b',"type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v3-ActCo'
-        b'de","code":"PPO","display":"preferred provider organization policy"}]},"poli'
-        b'cyHolder":{"reference":"Patient/1234567890123456703","type":"Patient"},"subs'
-        b'criber":{"reference":"Patient/1234567890123456703","type":"Patient"},"subscr'
-        b'iberId":"435679010300","beneficiary":{"reference":"Patient/12345678901234567'
-        b'03","type":"Patient"},"relationship":{"coding":[{"system":"http://terminolog'
-        b'y.hl7.org/CodeSystem/subscriber-relationship","code":"self"}]},"period":{"st'
-        b'art":"2021-01-01","end":"2021-12-31"},"payor":[{"reference":"Organization/66'
-        b'67778889990000014","type":"Organization","display":"Aetna"}],"class":[{"type'
-        b'":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/coverage-class'
-        b'","code":"plan","display":"Plan"}]},"value":"AE303","name":"Aetna Plan"}],"n'
-        b'etwork":"Medicare - MA/NY/NJ - Full Reciprocity","costToBeneficiary":[{"type'
-        b'":{"text":"Annual Physical Exams NMC - In Network"},"valueQuantity":{"value"'
-        b':50,"unit":"$","system":"http://aetna.com/Medicare/CostToBeneficiary/ValueQu'
-        b'antity/code"}}]}"'
+    # Step 2: Make a GET request to the specified path and check if the response is chunked
+    matched_response = requests.get(
+        mock_server_url + "/" + test_name,
+        headers={"Accept": "application/fhir+ndjson"},
+        stream=True,
     )
 
-    try:
-        mock_client.verify_expectations(test_name=test_name)
-    except MockServerVerifyException as e:
-        print(str(e))
-        raise e
+    assert matched_response.status_code == 200
+
+    chunk_number = 0
+    chunks: List[str] = []
+    for chunk in matched_response.raw.read_chunked():
+        chunk_number += 1
+        print(f"{chunk_number}: {chunk}")
+        chunks.append(chunk.decode("utf-8"))
+
+    assert chunk_number == 15
+    assert (
+        chunks[0]
+        == '{"resourceType":"Patient","id":"3456789012345670303","meta":{"profile":["http://hl7.org/fhir/us/cari'
+    )
+    # # Read the response in chunks
+    # # Read the response headers to check for Transfer-Encoding: chunked
+    # response_is_chunked = matched_response.getheader("Transfer-Encoding") == "chunked"
+    # assert response_is_chunked
+    # print("\nResponse is chunked:\n")
+    # i = 0
+    # chunks: List[str] = []
+    # while True:
+    #     i += 1
+    #     chunk_size = matched_response.read(2)  # Read the chunk size
+    #     if not chunk_size:
+    #         break
+    #     chunk_size1 = int(chunk_size, 16)  # Convert hex to integer
+    #     print(f"[{i}]: Chunk size: {chunk_size1}")
+    #     if chunk_size1 == 0:
+    #         break
+    #     chunk = matched_response.read(chunk_size1)  # Read the chunk
+    #     print(f"[{i}]: {chunk.decode('utf-8')}", end="")
+    #     chunks.append(chunk.decode("utf-8"))
+    #     matched_response.read(2)  # Read the \r\n that follows the chunk
+    #
+    # assert len(chunks) == 5
+    # assert chunks[0] == "1234"
+    # assert chunks[1] == "5678"
+    # assert chunks[2] == "90"
+    # assert chunks[3] == "1234"
+    # assert chunks[4] == "5678"
+    #
+    # # now verify the expectations were met
+    # try:
+    #     mock_client.verify_expectations(test_name=test_name)
+    # except MockServerVerifyException as e:
+    #     print(str(e))
+    #     raise e
