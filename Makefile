@@ -3,23 +3,23 @@ LANG=en_US.utf-8
 export LANG
 
 Pipfile.lock: Pipfile
-	docker-compose run --rm --name mockserver_client dev sh -c "rm -f Pipfile.lock && pipenv lock --dev"
+	docker compose run --rm --name mockserver_client dev sh -c "rm -f Pipfile.lock && pipenv lock --dev"
 
 .PHONY:devdocker
 devdocker: ## Builds the docker for dev
-	docker-compose build
+	docker compose build
 
 .PHONY:init
 init: devdocker up setup-pre-commit  ## Initializes the local developer environment
 
 .PHONY: up
 up: Pipfile.lock
-	docker-compose up --build -d --remove-orphans
+	docker compose up --build -d --remove-orphans
 	@echo MockServer dashboard: http://localhost:1080/mockserver/dashboard
 
 .PHONY: down
 down:
-	docker-compose down
+	docker compose down
 
 .PHONY:clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
@@ -35,30 +35,30 @@ run-pre-commit: setup-pre-commit
 
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
-	docker-compose run --rm --name mockserver_client dev pipenv sync && \
+	docker compose run --rm --name mockserver_client dev pipenv sync && \
 	make devdocker
 
 .PHONY:tests
 tests: up
-	docker-compose run --rm --name mockserver_client dev pytest tests
+	docker compose run --rm --name mockserver_client dev pytest tests
 
 .PHONY:shell
 shell:devdocker ## Brings up the bash shell in dev docker
-	docker-compose run --rm --name mockserver_client dev /bin/bash
+	docker compose run --rm --name mockserver_client dev /bin/bash
 
 .PHONY:build
 build:
-	docker-compose run --rm --name mockserver_client dev rm -rf dist/
-	docker-compose run --rm --name mockserver_client dev python3 setup.py sdist bdist_wheel
+	docker compose run --rm --name mockserver_client dev rm -rf dist/
+	docker compose run --rm --name mockserver_client dev python3 setup.py sdist bdist_wheel
 
 .PHONY:testpackage
 testpackage:build
-	docker-compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository testpypi dist/*
+	docker compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository testpypi dist/*
 # password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/
 
 .PHONY:package
 package:build
-	docker-compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository pypi dist/*
+	docker compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository pypi dist/*
 # password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/
 
 .DEFAULT_GOAL := help
@@ -66,4 +66,3 @@ package:build
 help: ## Show this help.
 	# from https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
