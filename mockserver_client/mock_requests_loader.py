@@ -503,8 +503,6 @@ def load_mock_source_api_json_responses(
     :param add_file_name: http://{mock_server_url}/{url_prefix}/{add_file_name}...
     :param url_suffix: http://{mock_server_url}/{url_prefix}/{add_file_name}/{url_suffix}?
     """
-
-    print("load_mock_source_api_json_responses: hello")
     file_path: str
     files: List[str] = sorted(glob(str(folder.joinpath("**/*.json")), recursive=True))
     for file_path in files:
