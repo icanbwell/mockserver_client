@@ -55,7 +55,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/icanbwell/mockserver_client",
     packages=find_packages(),
-    install_requires=["requests", "types-requests", "deepdiff"],
+    install_requires=["requests", "deepdiff"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",

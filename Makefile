@@ -36,7 +36,8 @@ run-pre-commit: setup-pre-commit
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
 	docker compose run --rm --name mockserver_client dev pipenv sync && \
-	make devdocker
+	make devdocker && \
+	make pipenv-setup
 
 .PHONY:tests
 tests: up
@@ -60,6 +61,11 @@ testpackage:build
 package:build
 	docker compose run --rm --name mockserver_client dev python3 -m twine upload -u __token__ --repository pypi dist/*
 # password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/
+
+.PHONY:pipenv-setup
+pipenv-setup:devdocker ## Run pipenv-setup to update setup.py with latest dependencies
+	docker compose run --rm --name mockserver_client dev sh -c "pipenv run pipenv install --skip-lock --categories \"pipenvsetup\" && pipenv run pipenv-setup sync --pipfile" && \
+	make run-pre-commit
 
 .DEFAULT_GOAL := help
 .PHONY: help
