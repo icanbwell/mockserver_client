@@ -5,6 +5,7 @@ import requests
 
 from mockserver_client.mock_requests_loader import load_mock_source_api_json_responses
 from mockserver_client.mockserver_client import MockServerFriendlyClient
+from mockserver_client.mockserver_verify_exception import MockServerVerifyException
 
 
 def test_mock_server_from_file_content_type_form_urlencoded() -> None:
@@ -35,6 +36,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
     )
 
     assert matched_response.status_code == 200
+    assert matched_response.headers["Transfer-Encoding"] == "chunked"
 
     chunk_number = 0
     chunks: List[str] = []
@@ -48,37 +50,10 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         chunks[0]
         == '{"resourceType":"Patient","id":"3456789012345670303","meta":{"profile":["http://hl7.org/fhir/us/cari'
     )
-    # # Read the response in chunks
-    # # Read the response headers to check for Transfer-Encoding: chunked
-    # response_is_chunked = matched_response.getheader("Transfer-Encoding") == "chunked"
-    # assert response_is_chunked
-    # print("\nResponse is chunked:\n")
-    # i = 0
-    # chunks: List[str] = []
-    # while True:
-    #     i += 1
-    #     chunk_size = matched_response.read(2)  # Read the chunk size
-    #     if not chunk_size:
-    #         break
-    #     chunk_size1 = int(chunk_size, 16)  # Convert hex to integer
-    #     print(f"[{i}]: Chunk size: {chunk_size1}")
-    #     if chunk_size1 == 0:
-    #         break
-    #     chunk = matched_response.read(chunk_size1)  # Read the chunk
-    #     print(f"[{i}]: {chunk.decode('utf-8')}", end="")
-    #     chunks.append(chunk.decode("utf-8"))
-    #     matched_response.read(2)  # Read the \r\n that follows the chunk
-    #
-    # assert len(chunks) == 5
-    # assert chunks[0] == "1234"
-    # assert chunks[1] == "5678"
-    # assert chunks[2] == "90"
-    # assert chunks[3] == "1234"
-    # assert chunks[4] == "5678"
-    #
-    # # now verify the expectations were met
-    # try:
-    #     mock_client.verify_expectations(test_name=test_name)
-    # except MockServerVerifyException as e:
-    #     print(str(e))
-    #     raise e
+
+    # now verify the expectations were met
+    try:
+        mock_client.verify_expectations(test_name=test_name)
+    except MockServerVerifyException as e:
+        print(str(e))
+        raise e
