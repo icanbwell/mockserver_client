@@ -1,9 +1,13 @@
-import http.client
+from typing import List
+
+from requests import Response
 
 
 def test_chunk_transfer() -> None:
     print("")
     import requests
+
+    test_name: str = "test_chunk_transfer"
 
     mock_server_url = "http://mock-server:1080"
     url = f"{mock_server_url}/mockserver/expectation"
@@ -11,7 +15,7 @@ def test_chunk_transfer() -> None:
     data = {
         "httpRequest": {
             "method": "GET",
-            "path": "/test_fhir_client_patient_list_async/Patient",
+            "path": f"/{test_name}",
         },
         "httpResponse": {
             "body": "1234567890",
@@ -34,38 +38,21 @@ def test_chunk_transfer() -> None:
         exit()
 
     # Step 2: Make a GET request to the specified path and check if the response is chunked
-    conn = http.client.HTTPConnection("mock-server", 1080)
-    conn.request(
-        "GET",
-        "/test_fhir_client_patient_list_async/Patient",
+    matched_response: Response = requests.get(
+        mock_server_url + "/" + test_name,
         headers={"Accept": "application/fhir+ndjson"},
+        stream=True,
     )
 
-    response2 = conn.getresponse()
-    print("Response status:", response2.status)
-    print("Response reason:", response2.reason)
+    assert matched_response.status_code == 200
+    assert matched_response.headers["Transfer-Encoding"] == "chunked"
 
-    # Read the response in chunks
-    # Read the response headers to check for Transfer-Encoding: chunked
-    if response2.getheader("Transfer-Encoding") == "chunked":
-        print("\nResponse is chunked:\n")
-        i = 0
-        while True:
-            i += 1
-            chunk_size = response2.read(2)  # Read the chunk size
-            if not chunk_size:
-                break
-            chunk_size1 = int(chunk_size, 16)  # Convert hex to integer
-            print(f"[{i}]: Chunk size: {chunk_size1}")
-            if chunk_size1 == 0:
-                break
-            chunk = response2.read(chunk_size1)  # Read the chunk
-            print(f"[{i}]: {chunk.decode('utf-8')}", end="")
-            response2.read(2)  # Read the \r\n that follows the chunk
-    else:
-        print("Response is not chunked.")
-        data2 = response2.read()
-        print(data2.decode("utf-8"))
+    chunk_number = 0
+    chunks: List[str] = []
+    for chunk in matched_response.raw.read_chunked():
+        chunk_number += 1
+        print(f"{chunk_number}: {chunk}")
+        chunks.append(chunk.decode("utf-8"))
 
-    print("")
-    conn.close()
+    assert chunk_number == 5
+    assert chunks[0] == "12"

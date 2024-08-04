@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 import requests
+from requests import Response
 
 from mockserver_client.mock_requests_loader import load_mock_source_api_json_responses
 from mockserver_client.mockserver_client import MockServerFriendlyClient
@@ -29,7 +30,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
     # expectation file content_type_form_urlencoded_string_body
     # this expectation is set up in the preferred way for "Content-Type": "application/x-www-form-urlencoded"
     # Step 2: Make a GET request to the specified path and check if the response is chunked
-    matched_response = requests.get(
+    matched_response: Response = requests.get(
         mock_server_url + "/" + test_name,
         headers={"Accept": "application/fhir+ndjson"},
         stream=True,
