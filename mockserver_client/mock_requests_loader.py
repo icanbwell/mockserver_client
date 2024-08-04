@@ -487,15 +487,6 @@ def load_mock_source_api_responses_from_folder(
     return files
 
 
-def calculate_chunked_response(chunks: List[str]) -> List[str]:
-    chunked_body = []
-    for chunk in chunks:
-        chunk_size = format(len(chunk), "x")  # Calculate chunk size in hexadecimal
-        chunked_body.append(f"{chunk_size}\r\n{chunk}\r\n")
-    chunked_body.append("0\r\n\r\n")  # End of chunks
-    return chunked_body
-
-
 def load_mock_source_api_json_responses(
     folder: Path,
     mock_client: MockServerFriendlyClient,
@@ -572,6 +563,13 @@ def load_mock_source_api_json_responses(
                     response_parameters["body"] = raw_body
                 else:
                     response_parameters["body"] = json.dumps(request_result)
+                if "connectionOptions" in request_result:
+                    connection_options = request_result["connectionOptions"]
+                    assert isinstance(
+                        connection_options, dict
+                    ), f"connectionOptions should be a dictionary: {connection_options}"
+                    request_result.pop("connectionOptions")
+                    response_parameters["connectionOptions"] = connection_options
                 # now mock it
                 mock_client.expect(
                     request=mock_request(path=path, **request_parameters),
