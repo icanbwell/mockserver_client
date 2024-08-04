@@ -25,6 +25,10 @@ mypy = ">=1.10.1"
 pytest = ">=8.2.2"
 # black is needed for formatting code
 black = ">=24.4.2"
+# aiohttp is needed for making HTTP requests asynchronously
+aiohttp = ">=3.10.0"
+# pytest-ayncio is needed for running async tests
+pytest-asyncio = ">=0.23.8"
 
 
 [requires]
