@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Example Schema",
+  "type": "object",
+  "properties": {
+    "request_parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "cookies": {
+          "type": "string"
+        },
+        "querystring": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "body": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "request_result": {
+      "type": "object",
+      "properties": {
+        "headers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "body": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "statusCode": {
+          "type": "integer"
+        },
+        "code": {
+          "type": "integer"
+        },
+        "cookies": {
+          "type": "string"
+        },
+        "delay": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "connectionOptions": {
+          "type": "object",
+          "properties": {
+            "suppressContentLengthHeader": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "contentLengthHeaderOverride": {
+              "type": "integer",
+              "nullable": true
+            },
+            "suppressConnectionHeader": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "chunkSize": {
+              "type": "integer",
+              "nullable": true
+            },
+            "keepAliveOverride": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "closeSocket": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "closeSocketDelay": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "integer"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "milliseconds",
+                    "seconds",
+                    "minutes",
+                    "hours"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "unit"
+              ],
+              "nullable": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "request_parameters",
+    "request_result"
+  ],
+  "additionalProperties": false
+}
