@@ -18,8 +18,10 @@ up: Pipfile.lock
 	@echo MockServer dashboard: http://localhost:1080/mockserver/dashboard
 
 .PHONY: down
-down:
-	docker compose down
+down: ## Brings down all the services in docker-compose
+	export DOCKER_CLIENT_TIMEOUT=300 && export COMPOSE_HTTP_TIMEOUT=300
+	docker compose down --remove-orphans && \
+	docker system prune -f
 
 .PHONY:clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
@@ -34,10 +36,10 @@ run-pre-commit: setup-pre-commit
 	./.git/hooks/pre-commit
 
 .PHONY:update
-update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
-	docker compose run --rm --name mockserver_client dev pipenv sync && \
-	make devdocker && \
-	make pipenv-setup
+update: Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
+	docker compose run --rm --name mockserver_client dev pipenv sync --dev && \
+	make pipenv-setup && \
+	make devdocker
 
 .PHONY:tests
 tests: up
