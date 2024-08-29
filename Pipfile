@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 requests = "*"
-deepdiff = "*"
+deepdiff = "7.0.1"
 
 [dev-packages]
 # setuptools is needed for building the package
