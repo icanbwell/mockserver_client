@@ -40,6 +40,8 @@ class MockServerFriendlyClient(object):
     Based on https://pypi.org/project/mockserver-friendly-client/
     """
 
+    MAX_FILENAME_LENGTH = 255  # Maximum length for most Linux systems
+
     def __init__(
         self,
         base_url: str,
@@ -999,12 +1001,20 @@ class MockServerFriendlyClient(object):
                     json_dict["request_result"] = {"status_code": response.status_code}
 
             json_content = json.dumps(json_dict, indent=4)
+
             # path_parts: List[str] = recorded_request_response.path.split("/")
             file_name: str = (
-                f"{index}-{self.safe_string_for_file_path(request.path)}.json"
+                f"{index}-{self.safe_string_for_file_path(str(request.path))}.json"
                 if request.path
                 else f"{index}.json"
             )
+
+            # Ensure the file name is within the allowed length
+            if len(file_name) > self.MAX_FILENAME_LENGTH:
+                # Truncate the file name, but preserve the extension (e.g., '.json')
+                base_name, ext = os.path.splitext(file_name)
+                file_name = base_name[: self.MAX_FILENAME_LENGTH - len(ext)] + ext
+
             path = Path(self.log_all_requests_to_folder)
             # for path_part in path_parts:
             #     path = path.joinpath(path_part)
