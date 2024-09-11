@@ -969,7 +969,7 @@ class MockServerFriendlyClient(object):
             cls.MAX_FILENAME_LENGTH
         )  # Most file systems have a 255-character limit for file names
         max_length = (
-            max_length - 4 - 5
+            max_length - 3 - 1 - 5
         )  # subtract 3 characters for index, 1 for "-" and 5 for ".json"
         if len(s) > max_length:
             s = s[:max_length]
