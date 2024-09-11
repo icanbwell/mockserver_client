@@ -950,8 +950,8 @@ class MockServerFriendlyClient(object):
             for index, r in enumerate(raw_requests)
         ]
 
-    @staticmethod
-    def safe_string_for_file_path(s: str) -> str:
+    @classmethod
+    def safe_string_for_file_path(cls, s: str) -> str:
         # Replace spaces with underscores
         s = s.replace(" ", "_")
 
@@ -965,7 +965,12 @@ class MockServerFriendlyClient(object):
         s = re.sub(r"[^a-z0-9_+]", "", s)
 
         # Limit length if needed
-        max_length = 255  # Most file systems have a 255-character limit for file names
+        max_length: int = (
+            cls.MAX_FILENAME_LENGTH
+        )  # Most file systems have a 255-character limit for file names
+        max_length = (
+            max_length - 4 - 5
+        )  # subtract 3 characters for index, 1 for "-" and 5 for ".json"
         if len(s) > max_length:
             s = s[:max_length]
 
@@ -1008,12 +1013,6 @@ class MockServerFriendlyClient(object):
                 if request.path
                 else f"{index}.json"
             )
-
-            # Ensure the file name is within the allowed length
-            if len(file_name) > self.MAX_FILENAME_LENGTH:
-                # Truncate the file name, but preserve the extension (e.g., '.json')
-                base_name, ext = os.path.splitext(file_name)
-                file_name = base_name[: self.MAX_FILENAME_LENGTH - len(ext)] + ext
 
             path = Path(self.log_all_requests_to_folder)
             # for path_part in path_parts:
