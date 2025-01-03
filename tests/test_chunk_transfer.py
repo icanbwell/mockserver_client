@@ -49,9 +49,10 @@ def test_chunk_transfer() -> None:
 
     chunk_number = 0
     chunks: List[str] = []
+    chunk: bytes
     for chunk in matched_response.raw.read_chunked():
         chunk_number += 1
-        print(f"{chunk_number}: {chunk}")
+        print(f"{chunk_number}: {chunk!r}")
         chunks.append(chunk.decode("utf-8"))
 
     assert chunk_number == 5

@@ -5,7 +5,8 @@ name = "pypi"
 
 [packages]
 requests = "*"
-deepdiff = "*"
+# deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes
+deepdiff = ">8"
 
 [dev-packages]
 # setuptools is needed for building the package
@@ -25,7 +26,7 @@ pytest = ">=8.2.2"
 # black is needed for formatting code
 black = ">=24.4.2"
 # aiohttp is needed for making HTTP requests asynchronously
-aiohttp = ">=3.10.0"
+aiohttp = ">=3.10.11"
 # pytest-ayncio is needed for running async tests
 pytest-asyncio = ">=0.23.8"
 # types-requests is needed for type hints for requests

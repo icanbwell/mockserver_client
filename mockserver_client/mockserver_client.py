@@ -8,7 +8,8 @@ from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
-from deepdiff import DeepDiff, Delta
+from deepdiff.delta import Delta
+from deepdiff.diff import DeepDiff
 from requests import put, Response
 
 from mockserver_client.exceptions.mock_server_exception import (

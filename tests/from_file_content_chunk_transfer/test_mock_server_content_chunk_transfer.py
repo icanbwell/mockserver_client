@@ -41,9 +41,10 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
 
     chunk_number = 0
     chunks: List[str] = []
+    chunk: bytes
     for chunk in matched_response.raw.read_chunked():
         chunk_number += 1
-        print(f"{chunk_number}: {chunk}")
+        print(f"{chunk_number}: {chunk!r}")
         chunks.append(chunk.decode("utf-8"))
 
     assert chunk_number == 15

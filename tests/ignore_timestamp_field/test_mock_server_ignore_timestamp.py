@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import requests
-from deepdiff import DeepDiff
+from deepdiff.diff import DeepDiff
 from requests import put
 
 from mockserver_client.mockserver_client import (
@@ -446,8 +446,8 @@ def test_deep_diff_with_exclude_regex_paths() -> None:
         json_1, json_2, ignore_order=True, exclude_regex_paths=[r".*\['timestamp'\]"]
     )
 
-    assert len(diff_result.to_dict().keys()) == 1
-    assert diff_result.to_dict() == {
+    assert len(diff_result.keys()) == 1
+    assert diff_result.items() == {
         "values_changed": {
             "root['start_timestamp']": {
                 "new_value": "2023-11-28T00:20:56.347865+00:00",
