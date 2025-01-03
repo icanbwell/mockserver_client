@@ -62,3 +62,6 @@ class MockServerJsonContentMismatchException(MockServerException):
 
         headers_text: str = str(self.headers) if self.headers is not None else ""
         super().__init__(error_message_prefix + headers_text + error_message)
+
+    def __str__(self) -> str:
+        return f"{self.method} {self.url}\nHeaders:{self.headers}\nExpected Body: {self.expected_json}\nActual Body: {self.actual_json}\n"
