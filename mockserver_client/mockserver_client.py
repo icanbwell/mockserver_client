@@ -229,7 +229,7 @@ class MockServerFriendlyClient(object):
                     request_result = content["request_result"]
                 except ValueError:
                     raise Exception(
-                        "`request_result` key not found. It is supposed to contain the expected result of the requst function."
+                        "`request_result` key not found. It is supposed to contain the expected result of the request function."
                     )
                 body = (
                     json.dumps(request_result)
@@ -305,6 +305,7 @@ class MockServerFriendlyClient(object):
 
     def match_to_recorded_requests(
         self,
+        *,
         recorded_requests: List[MockRequest],
     ) -> MatchRequestResult:
         """
@@ -323,16 +324,15 @@ class MockServerFriendlyClient(object):
         unmatched_expectation_requests: List[MockRequest] = []
         unmatched_requests: List[MockRequest] = [r for r in recorded_requests]
         expected_request: MockRequest
-        self.logger.debug("-------- EXPECTATIONS --------")
-        expectation: MockExpectation
-        for expectation in self.expectations:
-            self.logger.debug(expectation)
-        self.logger.debug("-------- END EXPECTATIONS --------")
-        self.logger.debug("-------- REQUESTS --------")
-        recorded_request: MockRequest
-        for recorded_request in recorded_requests:
-            self.logger.debug(recorded_request)
-        self.logger.debug("-------- END REQUESTS --------")
+        expectations_str = "\n".join([str(e) for e in self.expectations])
+        self.logger.debug(
+            f"\n-------- EXPECTATIONS --------\n{expectations_str}\n---------- END EXPECTATIONS --------"
+        )
+
+        requests_str: str = "\n".join([str(r) for r in recorded_requests])
+        self.logger.debug(
+            f"\n-------- REQUESTS --------\n{requests_str}\n-------- END REQUESTS --------"
+        )
 
         # get ids of all recorded requests
         recorded_request_ids: List[str] = []
@@ -425,7 +425,7 @@ class MockServerFriendlyClient(object):
     ) -> Optional[MockRequest]:
         """
         Finds matches on url only and then compares the bodies.  Returns if match was found.
-        Throws a JsonContentMismatchException if a url match was found but no body match was found
+        Throws a JsonContentMismatchException if an url match was found but no match on body was found
 
 
         :param expected_request: request that was expected
@@ -506,15 +506,16 @@ class MockServerFriendlyClient(object):
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
                 self.compare_request_bodies_json(
-                    actual_body_json,
-                    expected_body_json,
+                    actual_json=actual_body_json,
+                    expected_json=expected_body_json,
                     ignore_timestamp_field=self.ignore_timestamp_field,
                 )
             elif expected_request.body_list:
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
                 self.compare_request_bodies(
-                    recorded_request.body_list, expected_request.body_list
+                    actual_body_list=recorded_request.body_list,
+                    expected_body_list=expected_request.body_list,
                 )
             return matched_request
         return None
@@ -587,6 +588,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_request_match(
+        *,
         request1: MockRequest,
         request2: MockRequest,
         check_body: bool,
@@ -607,12 +609,12 @@ class MockServerFriendlyClient(object):
             return False
         request1_query_string: Optional[Dict[str, Any]] = (
             MockServerFriendlyClient.normalize_querystring_params(
-                request1.querystring_params
+                querystring_params=request1.querystring_params
             )
         )
         request2_query_string: Optional[Dict[str, Any]] = (
             MockServerFriendlyClient.normalize_querystring_params(
-                request2.querystring_params
+                querystring_params=request2.querystring_params
             )
         )
         if request1_query_string != request2_query_string:
@@ -635,6 +637,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def does_request_body_match(
+        *,
         request1: MockRequest,
         request2: MockRequest,
         ignore_timestamp_field: Optional[bool] = False,
@@ -658,14 +661,18 @@ class MockServerFriendlyClient(object):
             # now compare non bundle resources
             comparison_results = list(
                 MockServerFriendlyClient.compare_dicts(
-                    request1.json_list, request2.json_list, ignore_timestamp_field
+                    dict_1=request1.json_list,
+                    dict_2=request2.json_list,
+                    ignore_timestamp_field=ignore_timestamp_field,
                 )
             )
             return True if len(comparison_results) == 0 else False
         return True if request1.body_list == request2.body_list else False
 
     @staticmethod
-    def does_id_in_request_match(request1: MockRequest, request2: MockRequest) -> bool:
+    def does_id_in_request_match(
+        *, request1: MockRequest, request2: MockRequest
+    ) -> bool:
         """
         Whether the id in the two specified requests match.
 
@@ -742,6 +749,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def compare_request_bodies(
+        *,
         actual_body_list: Optional[List[Dict[str, Any]]],
         expected_body_list: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
@@ -756,12 +764,14 @@ class MockServerFriendlyClient(object):
         """
         difference_list: List[str] = []
         differences = MockServerFriendlyClient.compare_dicts(
-            actual_body_list, expected_body_list, ignore_timestamp_field
+            dict_1=actual_body_list,
+            dict_2=expected_body_list,
+            ignore_timestamp_field=ignore_timestamp_field,
         )
         if differences.keys():
             difference_list = (
                 MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
-                    differences
+                    difference=differences
                 )
             )
 
@@ -775,6 +785,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def compare_request_bodies_json(
+        *,
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
@@ -789,12 +800,14 @@ class MockServerFriendlyClient(object):
         # DeepDiff returns a dict with the differences
         difference_list: List[str] = []
         differences = MockServerFriendlyClient.compare_dicts(
-            expected_json, actual_json, ignore_timestamp_field
+            dict_1=expected_json,
+            dict_2=actual_json,
+            ignore_timestamp_field=ignore_timestamp_field,
         )
         if differences.keys():
             difference_list = (
                 MockServerFriendlyClient._deep_diff_diff_dict_to_string_list(
-                    differences
+                    difference=differences
                 )
             )
 
@@ -808,6 +821,7 @@ class MockServerFriendlyClient(object):
 
     @staticmethod
     def compare_dicts(
+        *,
         dict_1: Optional[List[Dict[str, Any]]],
         dict_2: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
@@ -839,7 +853,7 @@ class MockServerFriendlyClient(object):
         return dict(comparison_results)
 
     @staticmethod
-    def _deep_diff_diff_dict_to_string_list(difference: Dict[str, Any]) -> List[str]:
+    def _deep_diff_diff_dict_to_string_list(*, difference: Dict[str, Any]) -> List[str]:
         """
         Converts a DeepDiff diff dictionary to a list of strings
         """
@@ -865,7 +879,7 @@ class MockServerFriendlyClient(object):
         return diff_list
 
     def verify_expectations(
-        self, test_name: Optional[str] = None, files: Optional[List[str]] = None
+        self, *, test_name: Optional[str] = None, files: Optional[List[str]] = None
     ) -> None:
         """
         Verify that the requests made match the expectations.  Raises exceptions if there are mismatches
@@ -977,7 +991,7 @@ class MockServerFriendlyClient(object):
         return s
 
     def write_all_requests_to_folder(
-        self, request_responses: List[MockRequestResponse]
+        self, *, request_responses: List[MockRequestResponse]
     ) -> None:
         assert self.log_all_requests_to_folder
         # write all requests to file
@@ -1015,15 +1029,17 @@ class MockServerFriendlyClient(object):
             )
 
             path = Path(self.log_all_requests_to_folder)
-            # for path_part in path_parts:
-            #     path = path.joinpath(path_part)
+
             path = path.joinpath(file_name)
             with open(path, "w") as file:
                 file.write(json_content)
 
     @staticmethod
     def normalize_querystring_params(
-        querystring_params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+        *,
+        querystring_params: Optional[
+            Union[List[Dict[str, Any]], Dict[str, Any]]
+        ] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         ensure a dictionary of querystring params is formatted so that the param name is the dictionary key.
@@ -1155,7 +1171,7 @@ def times_any() -> _Timing:
 
 
 def form(form1: Any) -> Dict[str, Any]:
-    # NOTE(lindycoder): Support for mockservers version before https://github.com/jamesdbloom/mockserver/issues/371
+    # NOTE: Support for mockserver version before https://github.com/jamesdbloom/mockserver/issues/371
     return collections.OrderedDict(
         (("type", "PARAMETERS"), ("parameters", _to_named_values_list(form1)))
     )
