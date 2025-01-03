@@ -145,9 +145,11 @@ class MockRequest:
 
     def __str__(self) -> str:
         return f"({self.index})" f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}" + (
-            f": {self.json_list}" if self.json_list else ""
+            f" | Body: {self.json_list}" if self.json_list else ""
         ) + (
-            f" from ({self.file_path})" if self.file_path else ""
+            f" | Headers: {self.headers}" if self.headers else ""
+        ) + (
+            f" | File: ({self.file_path})" if self.file_path else ""
         )
 
     @staticmethod
