@@ -18,6 +18,10 @@ class MockRequest:
         self.index: int = index
         assert request is not None
         assert isinstance(request, dict)
+
+        self.sequence: Optional[int] = request.get("sequence")
+        self.description: Optional[str] = request.get("description")
+
         self.request: Dict[str, Any] = request
 
         self.file_path: Optional[str] = file_path
@@ -133,7 +137,7 @@ class MockRequest:
             # fmt: off
             if "application/x-www-form-urlencoded" in headers_dict.get("Content-Type", []):
                 return True
-            if (headers_dict.get("name") == "Content-Type" 
+            if (headers_dict.get("name") == "Content-Type"
                     and "application/x-www-form-urlencoded" in headers_dict.get("values", [])):
                 return True
             # fmt: on

@@ -13,6 +13,9 @@ class MockServerJsonContentMismatchException(MockServerException):
 
     def __init__(
         self,
+        *,
+        method: Optional[str],
+        url: Optional[str],
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
         differences: List[str],
@@ -27,6 +30,8 @@ class MockServerJsonContentMismatchException(MockServerException):
         :param differences: differences
         :param expected_file_path:
         """
+        self.url: Optional[str] = url
+        self.method: Optional[str] = method
         self.actual_json: Optional[List[Dict[str, Any]]] = actual_json
         assert isinstance(actual_json, list), type(actual_json)
         self.expected_json: Optional[List[Dict[str, Any]]] = expected_json
@@ -35,6 +40,7 @@ class MockServerJsonContentMismatchException(MockServerException):
         assert isinstance(differences, list), type(differences)
         self.expected_file_path = expected_file_path
         assert isinstance(expected_file_path, Path), type(expected_file_path)
+        error_message_prefix: str = f"{method} {url}: "
         error_message: str = f"Expected vs Actual: {differences} [{expected_file_path}]"
         if expected_json is None and actual_json is not None:
             error_message = f"Expected was None but Actual is {json.dumps(actual_json)}"
@@ -48,4 +54,5 @@ class MockServerJsonContentMismatchException(MockServerException):
             and len(self.actual_json) != len(self.expected_json)  # type: ignore
         ):
             error_message = f"Expected has {len(expected_json)} rows while actual has {len(actual_json)} rows"
-        super().__init__(error_message)
+
+        super().__init__(error_message_prefix + error_message)

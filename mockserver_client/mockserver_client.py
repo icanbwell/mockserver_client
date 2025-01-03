@@ -506,6 +506,8 @@ class MockServerFriendlyClient(object):
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
                 self.compare_request_bodies_json(
+                    url=recorded_request.path,
+                    method=recorded_request.method,
                     actual_json=actual_body_json,
                     expected_json=expected_body_json,
                     ignore_timestamp_field=self.ignore_timestamp_field,
@@ -514,6 +516,8 @@ class MockServerFriendlyClient(object):
                 if len(unmatched_request_list) > 0:
                     unmatched_requests.remove(unmatched_request_list[0])
                 self.compare_request_bodies(
+                    url=recorded_request.path,
+                    method=recorded_request.method,
                     actual_body_list=recorded_request.body_list,
                     expected_body_list=expected_request.body_list,
                 )
@@ -750,6 +754,8 @@ class MockServerFriendlyClient(object):
     @staticmethod
     def compare_request_bodies(
         *,
+        url: Optional[str],
+        method: Optional[str],
         actual_body_list: Optional[List[Dict[str, Any]]],
         expected_body_list: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
@@ -758,6 +764,8 @@ class MockServerFriendlyClient(object):
         Compares the bodies of the two requests and raises an exception with detailed diff if they don't match
 
 
+        :param url: url of the request
+        :param method: method of the request
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
         :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
@@ -777,6 +785,8 @@ class MockServerFriendlyClient(object):
 
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
+                url=url,
+                method=method,
                 actual_json=actual_body_list,
                 expected_json=expected_body_list,
                 differences=difference_list,
@@ -786,6 +796,8 @@ class MockServerFriendlyClient(object):
     @staticmethod
     def compare_request_bodies_json(
         *,
+        url: Optional[str],
+        method: Optional[str],
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
@@ -793,6 +805,8 @@ class MockServerFriendlyClient(object):
         """
         Compares the JSON bodies of the two requests and raises an exception with detailed diff if they don't match
 
+        :param url: url of the request
+        :param method: method of the request
         :param actual_json: json of actual request
         :param expected_json: json of expected request
         :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
@@ -813,6 +827,8 @@ class MockServerFriendlyClient(object):
 
         if len(differences) > 0:
             raise MockServerJsonContentMismatchException(
+                url=url,
+                method=method,
                 actual_json=actual_json,
                 expected_json=expected_json,
                 differences=difference_list,
@@ -1078,6 +1094,7 @@ def mock_request(
     body: Optional[Union[str, Dict[str, Any]]] = None,
     headers: Optional[Dict[str, Any]] = None,
     cookies: Optional[str] = None,
+    priority: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Mocks a request
@@ -1089,6 +1106,7 @@ def mock_request(
     :param body: body to expect in the request
     :param headers: headers to expect in the request
     :param cookies: cookies to expect in the request
+    :param priority: priority of the request
     :return: mock request
     """
     assert (
@@ -1102,6 +1120,7 @@ def mock_request(
         _Option("body", body),
         _Option("headers", headers, formatter=_to_named_values_list),
         _Option("cookies", cookies),
+        _Option("priority", priority),
     )
 
 
