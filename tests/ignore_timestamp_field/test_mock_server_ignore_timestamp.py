@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Dict, Any
 
 import pytest
 import requests
@@ -447,7 +448,9 @@ def test_deep_diff_with_exclude_regex_paths() -> None:
     )
 
     assert len(diff_result.keys()) == 1
-    assert diff_result.items() == {
+    result_items = diff_result.items()
+    result_dict: Dict[str, Any] = {k: v for k, v in result_items}
+    assert result_dict == {
         "values_changed": {
             "root['start_timestamp']": {
                 "new_value": "2023-11-28T00:20:56.347865+00:00",
