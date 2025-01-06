@@ -511,6 +511,11 @@ class MockServerFriendlyClient(object):
                     actual_json=actual_body_json,
                     expected_json=expected_body_json,
                     ignore_timestamp_field=self.ignore_timestamp_field,
+                    expected_file_path=(
+                        Path(expected_request.file_path)
+                        if expected_request.file_path
+                        else None
+                    ),
                 )
             elif expected_request.body_list:
                 if len(unmatched_request_list) > 0:
@@ -519,6 +524,11 @@ class MockServerFriendlyClient(object):
                     request=recorded_request,
                     actual_body_list=recorded_request.body_list,
                     expected_body_list=expected_request.body_list,
+                    expected_file_path=(
+                        Path(expected_request.file_path)
+                        if expected_request.file_path
+                        else None
+                    ),
                 )
             return matched_request
         return None
@@ -757,6 +767,7 @@ class MockServerFriendlyClient(object):
         actual_body_list: Optional[List[Dict[str, Any]]],
         expected_body_list: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
+        expected_file_path: Optional[Path],
     ) -> None:
         """
         Compares the bodies of the two requests and raises an exception with detailed diff if they don't match
@@ -766,6 +777,7 @@ class MockServerFriendlyClient(object):
         :param actual_body_list: body of actual request
         :param expected_body_list: body of expected request
         :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
+        :param expected_file_path: expected file path
         """
         difference_list: List[str] = []
         differences = MockServerFriendlyClient.compare_dicts(
@@ -786,7 +798,7 @@ class MockServerFriendlyClient(object):
                 actual_json=actual_body_list,
                 expected_json=expected_body_list,
                 differences=difference_list,
-                expected_file_path=Path(),
+                expected_file_path=expected_file_path,
             )
 
     @staticmethod
@@ -796,6 +808,7 @@ class MockServerFriendlyClient(object):
         actual_json: Optional[List[Dict[str, Any]]],
         expected_json: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
+        expected_file_path: Optional[Path],
     ) -> None:
         """
         Compares the JSON bodies of the two requests and raises an exception with detailed diff if they don't match
@@ -804,6 +817,7 @@ class MockServerFriendlyClient(object):
         :param actual_json: json of actual request
         :param expected_json: json of expected request
         :param ignore_timestamp_field: if True any timestamp fields in the request body will be ignored in the comparison
+        :param expected_file_path: expected file path
         """
         # DeepDiff returns a dict with the differences
         difference_list: List[str] = []
@@ -825,7 +839,7 @@ class MockServerFriendlyClient(object):
                 actual_json=actual_json,
                 expected_json=expected_json,
                 differences=difference_list,
-                expected_file_path=Path(),
+                expected_file_path=expected_file_path,
             )
 
     @staticmethod
