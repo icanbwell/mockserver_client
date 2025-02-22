@@ -132,7 +132,7 @@ def test_mock_server_ignore_timestamp_field_is_missing() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -207,7 +207,7 @@ def test_mock_server_ignore_timestamp_element_is_missing() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -285,7 +285,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -376,7 +376,7 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()

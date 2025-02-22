@@ -42,7 +42,7 @@ def test_mock_server_inline_fail() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
