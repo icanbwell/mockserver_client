@@ -458,7 +458,10 @@ def load_mock_elasticsearch_requests_from_folder(
 
 
 def load_mock_source_api_responses_from_folder(
-    folder: Path, mock_client: MockServerFriendlyClient, url_prefix: Optional[str]
+    folder: Path,
+    mock_client: MockServerFriendlyClient,
+    url_prefix: Optional[str],
+    times_: int = 1,
 ) -> List[str]:
     """
     Mock responses for all files from the folder and its sub-folders
@@ -466,8 +469,9 @@ def load_mock_source_api_responses_from_folder(
     from https://pypi.org/project/mockserver-friendly-client/
 
     :param folder: where to look for files (recursively)
-    :param mock_client:
-    :param url_prefix:
+    :param mock_client: client to mock server
+    :param url_prefix: http://{mock_server_url}/{url_prefix}...
+    :param times_: number of times to mock the response
     """
     file_path: str
     files: List[str] = sorted(glob(str(folder.joinpath("**/*")), recursive=True))
@@ -481,7 +485,7 @@ def load_mock_source_api_responses_from_folder(
                     path=path,
                 ),
                 response=mock_response(body=content),
-                timing=times(1),
+                timing=times(times_),
                 file_path=file_path,
             )
     return files
@@ -493,6 +497,7 @@ def load_mock_source_api_json_responses(
     url_prefix: Optional[str],
     add_file_name: Optional[bool] = False,
     url_suffix: Optional[str] = None,
+    times_: int = 1,
 ) -> List[str]:
     """
     Mock responses for all files from the folder and its sub-folders
@@ -502,6 +507,7 @@ def load_mock_source_api_json_responses(
     :param url_prefix: http://{mock_server_url}/{url_prefix}...
     :param add_file_name: http://{mock_server_url}/{url_prefix}/{add_file_name}...
     :param url_suffix: http://{mock_server_url}/{url_prefix}/{add_file_name}/{url_suffix}?
+    :param times_: number of times to mock the response
     """
     file_path: str
     files: List[str] = sorted(glob(str(folder.joinpath("**/*.json")), recursive=True))
@@ -533,6 +539,14 @@ def load_mock_source_api_json_responses(
                 )
                 if url_suffix:
                     path = f"{path}/{url_suffix}"
+
+            if "description" in request_parameters:
+                description = request_parameters["description"]
+                del request_parameters["description"]
+                if request_parameters.get("headers"):
+                    request_parameters["headers"]["X-Description"] = description
+                else:
+                    request_parameters["headers"] = {"X-Description": description}
 
             try:
                 request_result = content["request_result"]
@@ -571,8 +585,8 @@ def load_mock_source_api_json_responses(
                 # now mock it
                 mock_client.expect(
                     request=mock_request(path=path, **request_parameters),
-                    response=(mock_response(**response_parameters)),
-                    timing=times(1),
+                    response=mock_response(**response_parameters),
+                    timing=times(times_),
                     file_path=file_path,
                 )
             except ValueError:

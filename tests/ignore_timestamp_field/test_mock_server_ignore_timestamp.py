@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
+from typing import Dict, Any
 
 import pytest
 import requests
-from deepdiff import DeepDiff
+from deepdiff.diff import DeepDiff
 from requests import put
 
 from mockserver_client.mockserver_client import (
@@ -131,7 +132,7 @@ def test_mock_server_ignore_timestamp_field_is_missing() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -206,7 +207,7 @@ def test_mock_server_ignore_timestamp_element_is_missing() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -284,7 +285,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -375,7 +376,7 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
             )
         ),
         timing=times(1),
-        file_path=None,
+        file_path="foo",
     )
 
     http = requests.Session()
@@ -446,8 +447,10 @@ def test_deep_diff_with_exclude_regex_paths() -> None:
         json_1, json_2, ignore_order=True, exclude_regex_paths=[r".*\['timestamp'\]"]
     )
 
-    assert len(diff_result.to_dict().keys()) == 1
-    assert diff_result.to_dict() == {
+    assert len(diff_result.keys()) == 1
+    result_items = diff_result.items()
+    result_dict: Dict[str, Any] = {k: v for k, v in result_items}
+    assert result_dict == {
         "values_changed": {
             "root['start_timestamp']": {
                 "new_value": "2023-11-28T00:20:56.347865+00:00",
