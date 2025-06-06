@@ -15,6 +15,55 @@ from mockserver_client.mockserver_client import (
 )
 
 
+def bulk_laod_mock_fhir_requests_from_folder(
+    folder: Path,
+    mock_client: MockServerFriendlyClient,
+    method: str = "POST",
+    query_string: Optional[Dict[str, Any]] = None,
+    url_prefix: Optional[str] = None,
+    response_body: Optional[str] = None,
+    resource_type: str = "Person",
+) -> List[str]:
+    """
+    Loads all .json files from the folder and its sub-folders
+
+    from https://pypi.org/project/mockserver-friendly-client/
+
+    :param folder: where to look for .json files (recursively)
+    :param mock_client: client to mock server
+    :param method:
+    :param query_string:
+    :param url_prefix:
+    :param response_body:
+    """
+    file_path: str
+    files: List[str] = sorted(
+        glob(str(folder.joinpath("**/*.json")), recursive=True), reverse=True
+    )
+    for file_path in files:
+        with open(file_path, "r") as file:
+            data = json.loads(file.read())
+            if isinstance(data, list):
+                if method == "POST":
+                    # noinspection PyPep8Naming
+                    path = f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resource_type}/$merge"
+                    payload: str = (
+                        json.dumps(data) if not response_body else response_body
+                    )
+                    mock_client.expect(
+                        request=mock_request(
+                            method="POST",
+                            path=path,
+                            body=json_equals(data),
+                            querystring=query_string,
+                        ),
+                        response=mock_response(body=payload),
+                        timing=times(1),
+                        file_path=file_path,
+                    )
+    return files
+
+
 def load_mock_fhir_requests_from_folder(
     folder: Path,
     mock_client: MockServerFriendlyClient,
