@@ -3,7 +3,7 @@ from typing import List
 import pytest
 
 from mockserver_client.mock_requests_loader import (
-    bulk_laod_mock_fhir_requests_from_folder,
+    bulk_load_mock_fhir_requests_from_folder,
 )
 from mockserver_client.mockserver_client import MockServerFriendlyClient
 
@@ -26,7 +26,7 @@ def test_bulk_load_calls_register_expectation_for_each_file(
 
     read_files: List[str] = []
     try:
-        read_files = bulk_laod_mock_fhir_requests_from_folder(
+        read_files = bulk_load_mock_fhir_requests_from_folder(
             folder=expectations_dir,
             mock_client=mock_client,
             method="POST",
