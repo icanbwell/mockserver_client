@@ -15,7 +15,7 @@ from mockserver_client.mockserver_client import (
 )
 
 
-def bulk_laod_mock_fhir_requests_from_folder(
+def bulk_load_mock_fhir_requests_from_folder(
     folder: Path,
     mock_client: MockServerFriendlyClient,
     method: str = "POST",
