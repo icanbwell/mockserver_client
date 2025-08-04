@@ -22,14 +22,14 @@ def check_active_expectations(request: pytest.FixtureRequest) -> None:
 
     def finalizer() -> None:
         active_expectations_response = put(
-            f"{mock_server_url}/retrieve?type=active_expectations"
+            f"{mock_server_url}/retrieve?type=active_expectations", timeout=60
         )
-        assert (
-            active_expectations_response.status_code == 200
-        ), "Failed to retrieve active expectations"
-        assert (
-            active_expectations_response.json() == []
-        ), "There are active expectations that were not cleared"
+        assert active_expectations_response.status_code == 200, (
+            "Failed to retrieve active expectations"
+        )
+        assert active_expectations_response.json() == [], (
+            "There are active expectations that were not cleared"
+        )
 
     request.addfinalizer(finalizer)
 
@@ -156,7 +156,7 @@ def test_mock_server_ignore_timestamp_field_is_missing() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore[attr-defined]
         "dictionary_item_removed: root[0]['notificationEvent'][1]['timestamp']"
     ]
 
@@ -229,7 +229,7 @@ def test_mock_server_ignore_timestamp_element_is_missing() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore[attr-defined]
         "iterable_item_removed: root[0]['notificationEvent'][1]"
     ]
 
@@ -319,7 +319,7 @@ def test_mock_server_ignore_timestamp_other_value_changed() -> None:
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore[attr-defined]
         "values_changed: root[0]['grant_type']={'new_value': 'client', 'old_value': 'client_credentials'}"
     ]
 
@@ -404,7 +404,7 @@ def test_mock_server_ignore_timestamp_other_value_changed_and_field_missing() ->
             print(str(e))
             raise e
 
-    assert excinfo.value.exceptions[0].differences == [  # type: ignore
+    assert excinfo.value.exceptions[0].differences == [  # type: ignore[attr-defined]
         "values_changed: root[0]['grant_type']={'new_value': 'client', 'old_value': 'client_credentials'}",
         "dictionary_item_removed: root[0]['notificationEvent'][0]['timestamp']",
     ]

@@ -48,9 +48,9 @@ class MockRequest:
             body=raw_body, headers=self.headers
         )
 
-        assert self.body_list is None or isinstance(
-            self.body_list, list
-        ), f"{type(self.body_list)}: {json.dumps(self.body_list)}"
+        assert self.body_list is None or isinstance(self.body_list, list), (
+            f"{type(self.body_list)}: {json.dumps(self.body_list)}"
+        )
 
         raw_json_content: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = (
             self.body_list[0].get("json")
@@ -70,9 +70,9 @@ class MockRequest:
             else None
         )
 
-        assert self.json_list is None or isinstance(
-            self.json_list, list
-        ), f"{type(self.json_list)}: {json.dumps(self.json_list)}"
+        assert self.json_list is None or isinstance(self.json_list, list), (
+            f"{type(self.json_list)}: {json.dumps(self.json_list)}"
+        )
 
     @staticmethod
     def parse_body(
@@ -144,12 +144,12 @@ class MockRequest:
         return False
 
     def __str__(self) -> str:
-        return f"({self.index})" f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}" + (
-            f" | Body: {self.json_list}" if self.json_list else ""
-        ) + (
-            f" | Headers: {self.headers}" if self.headers else ""
-        ) + (
-            f" | File: ({self.file_path})" if self.file_path else ""
+        return (
+            f"({self.index})"
+            f" {self.path}{MockRequestLogger.convert_query_parameters_to_str(self.querystring_params)}"
+            + (f" | Body: {self.json_list}" if self.json_list else "")
+            + (f" | Headers: {self.headers}" if self.headers else "")
+            + (f" | File: ({self.file_path})" if self.file_path else "")
         )
 
     @staticmethod

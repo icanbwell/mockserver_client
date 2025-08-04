@@ -28,7 +28,7 @@ def test_chunk_transfer() -> None:
         "times": {"remainingTimes": 1},
     }
 
-    response = requests.put(url, headers=headers, json=data)
+    response = requests.put(url, headers=headers, json=data, timeout=60)
 
     if response.status_code == 201 or response.status_code == 200:
         print("Expectation created successfully.")
@@ -42,6 +42,7 @@ def test_chunk_transfer() -> None:
         mock_server_url + "/" + test_name,
         headers={"Accept": "application/fhir+ndjson"},
         stream=True,
+        timeout=60,
     )
 
     assert matched_response.status_code == 200

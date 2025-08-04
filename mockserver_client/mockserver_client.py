@@ -72,7 +72,7 @@ class MockServerFriendlyClient(object):
         if query_string:
             url += "?" + query_string
         try:
-            return put(url, data=data)
+            return put(url, data=data, timeout=60)
         except Exception as e:
             raise Exception(f"Error calling {url}: {e}")
 
@@ -162,7 +162,7 @@ class MockServerFriendlyClient(object):
         """
         # if timestamp values are being ignored then replace the timestamp value with the json-unit ignore string
         if self.ignore_timestamp_field:
-            request = self.replace_timestamp_with_ignore(request)  # type: ignore
+            request = self.replace_timestamp_with_ignore(request)  # type: ignore[assignment]
 
         self.stub(
             request=request,
@@ -348,7 +348,7 @@ class MockServerFriendlyClient(object):
                     recorded_request_ids.append(j)
 
         matched_requests: List[MockRequest] = []
-        self.logger.info(f"========= START MATCHING EXPECTATIONS  ================")
+        self.logger.info("========= START MATCHING EXPECTATIONS  ================")
         # now try to match requests to expectations
         for expectation in self.expectations:
             expected_request = expectation.request
@@ -358,7 +358,7 @@ class MockServerFriendlyClient(object):
             self.logger.info(f"{expected_request}")
             matching_request: Optional[MockRequest] = None
             recorded_requests_not_matched_yet: List[MockRequest] = [
-                r for r in recorded_requests if not r in matched_requests
+                r for r in recorded_requests if r not in matched_requests
             ]
             try:
                 matching_request = self.find_matches_on_request_and_body(
@@ -387,9 +387,9 @@ class MockServerFriendlyClient(object):
                 self.logger.info("---- EXPECTATION NOT MATCHED ----")
                 self.logger.info(f"{expected_request}")
                 self.logger.info("IDs sent in requests")
-                self.logger.info(f'{",".join(recorded_request_ids)}')
+                self.logger.info(f"{','.join(recorded_request_ids)}")
                 self.logger.info("---- END EXPECTATION NOT MATCHED ----")
-        self.logger.info(f"========= END MATCHING EXPECTATIONS ================")
+        self.logger.info("========= END MATCHING EXPECTATIONS ================")
 
         # now fail for every expectation in unmatched_expectation_requests
         for unmatched_expectation in unmatched_expectation_requests:
@@ -591,9 +591,9 @@ class MockServerFriendlyClient(object):
                     request1=r, request2=recorded_request, check_body=True
                 )
             ]
-            assert (
-                len(unmatched_request_list) >= 0
-            ), f"{','.join([str(c) for c in unmatched_request_list])}"
+            assert len(unmatched_request_list) >= 0, (
+                f"{','.join([str(c) for c in unmatched_request_list])}"
+            )
             if len(unmatched_request_list) > 0:
                 unmatched_requests.remove(unmatched_request_list[0])
             return matching_request
@@ -849,7 +849,6 @@ class MockServerFriendlyClient(object):
         dict_2: Optional[List[Dict[str, Any]]],
         ignore_timestamp_field: Optional[bool] = False,
     ) -> Dict[str, Any]:
-
         if ignore_timestamp_field:
             comparison_results = DeepDiff(
                 dict_1,
@@ -1030,9 +1029,9 @@ class MockServerFriendlyClient(object):
                 }
             }
             if request.querystring_params:
-                json_dict["request_parameters"][
-                    "querystring"
-                ] = request.querystring_params
+                json_dict["request_parameters"]["querystring"] = (
+                    request.querystring_params
+                )
             if request.json_list:
                 json_dict["request_body"] = request.json_list
             response: MockResponse | None = recorded_request_response.response
@@ -1089,7 +1088,7 @@ class MockServerFriendlyClient(object):
 
         normalized_params: Dict[str, Any] = {}
         for param_dict in querystring_params:
-            params: Dict[str, Any] = param_dict  # type: ignore
+            params: Dict[str, Any] = param_dict  # type: ignore[assignment]
             normalized_params[params["name"]] = params["values"]
         return normalized_params
 
@@ -1116,9 +1115,9 @@ def mock_request(
     :param priority: priority of the request
     :return: mock request
     """
-    assert (
-        not path or "?" not in path
-    ), "Do not specify query string in the path.  Use the querystring parameter"
+    assert not path or "?" not in path, (
+        "Do not specify query string in the path.  Use the querystring parameter"
+    )
 
     return _non_null_options_to_dict(
         _Option("method", method),

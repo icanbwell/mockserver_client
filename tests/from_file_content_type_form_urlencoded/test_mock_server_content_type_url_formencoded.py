@@ -49,9 +49,9 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
             "status": "Retrieving Data",
         },
     )
-    assert (
-        not_found_response.status_code == 404
-    ), "mock server x-www-form-urlencoded issue is resolved!"
+    assert not_found_response.status_code == 404, (
+        "mock server x-www-form-urlencoded issue is resolved!"
+    )
 
     # expectation file content_type_form_urlencoded_matched
     # this mocked request is the same as the previous except the service_slug value is now a string due to the
@@ -76,7 +76,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         data={"claim_id": "11111", "status": "active"},
     )
     assert matched_response.status_code == 404
-    assert json.loads(matched_response._content) == {"error_message": "Data Not Found"}  # type: ignore
+    assert json.loads(matched_response._content) == {"error_message": "Data Not Found"}  # type: ignore[arg-type]
 
     # mock request to validate that in case of error response, the api is mocked and error_view is
     # populated properly using the pre-defined map
@@ -86,7 +86,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         data={"claim_id": "11111", "status": "inactive"},
     )
     assert matched_response.status_code == 403
-    assert json.loads(matched_response._content) == {  # type: ignore
+    assert json.loads(matched_response._content) == {  # type: ignore[arg-type]
         "error_message": "HTTP 403 ERROR: You do not have permission to access this resource"
     }
 
