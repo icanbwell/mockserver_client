@@ -6,9 +6,9 @@ services:
       dockerfile: Dockerfile
       context: .
     volumes:
-      - ./:/src/
+      - ./:/usr/src/mockserver_client/
     container_name: mockserver_client_dev
-    working_dir: /src
+    working_dir: /usr/src/mockserver_client/
     env_file:
       - docker.env
 

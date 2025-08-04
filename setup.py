@@ -22,7 +22,7 @@ except IOError:
 
 # create the package setup
 setup(
-    install_requires=["requests", "deepdiff"],
+    install_requires=["requests", "deepdiff>8"],
     name=package_name,
     version=version,
     author="Imran Qureshi",

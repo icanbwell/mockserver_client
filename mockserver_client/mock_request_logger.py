@@ -42,7 +42,7 @@ class MockRequestLogger:
 
     @staticmethod
     def convert_query_parameters_to_str(
-        query_parameters: Dict[str, Any] | List[Dict[str, Any]] | None
+        query_parameters: Dict[str, Any] | List[Dict[str, Any]] | None,
     ) -> str:
         if query_parameters is None:
             return ""
