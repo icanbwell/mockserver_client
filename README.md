@@ -22,7 +22,7 @@ from mockserver_client.mockserver_client import (
             body={
                 "json": {
                     "client_id": "unitypoint_bwell",
-                    "client_secret": "fake_client_secret",
+                    "client_secret": "",
                     "grant_type": "client_credentials",
                 }
             },

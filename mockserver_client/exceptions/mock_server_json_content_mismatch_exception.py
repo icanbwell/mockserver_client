@@ -57,7 +57,7 @@ class MockServerJsonContentMismatchException(MockServerException):
         elif (
             expected_json is not None
             and actual_json is not None
-            and len(self.actual_json) != len(self.expected_json)  # type: ignore
+            and len(self.actual_json) != len(self.expected_json)  # type: ignore[arg-type]
         ):
             error_message = f"Expected has {len(expected_json)} rows while actual has {len(actual_json)} rows"
 

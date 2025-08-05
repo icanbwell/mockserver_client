@@ -423,7 +423,7 @@ def load_mock_fhir_everything_batch_requests_from_folder(
         for entry in fhir_bundle["entry"]:
             id_ = entry.get("resource", {}).get("id", "")
             if id_ in ids:
-                result_bundle["entry"].append(entry)  # type: ignore
+                result_bundle["entry"].append(entry)  # type: ignore[attr-defined]
     # find id and resourceType
     path = (
         f"{('/' + url_prefix) if url_prefix else ''}/4_0_0/{resourceType}/$everything"
@@ -611,24 +611,24 @@ def load_mock_source_api_json_responses(
                     response_parameters["code"] = code
                 if "headers" in request_result:
                     headers = request_result["headers"]
-                    assert isinstance(
-                        headers, dict
-                    ), f"headers should be a dictionary: {headers}"
+                    assert isinstance(headers, dict), (
+                        f"headers should be a dictionary: {headers}"
+                    )
                     request_result.pop("headers")
                     response_parameters["headers"] = headers
                 if "body" in request_result:
                     raw_body = request_result["body"]
-                    assert isinstance(
-                        raw_body, str
-                    ), f"body should be a string: {raw_body}"
+                    assert isinstance(raw_body, str), (
+                        f"body should be a string: {raw_body}"
+                    )
                     response_parameters["body"] = raw_body
                 else:
                     response_parameters["body"] = json.dumps(request_result)
                 if "connectionOptions" in request_result:
                     connection_options = request_result["connectionOptions"]
-                    assert isinstance(
-                        connection_options, dict
-                    ), f"connectionOptions should be a dictionary: {connection_options}"
+                    assert isinstance(connection_options, dict), (
+                        f"connectionOptions should be a dictionary: {connection_options}"
+                    )
                     request_result.pop("connectionOptions")
                     response_parameters["connectionOptions"] = connection_options
                 # now mock it

@@ -7,6 +7,8 @@ name = "pypi"
 requests = "*"
 # deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes
 deepdiff = ">8"
+# uvicorn is a Python library for running ASGI applications
+uvicorn = ">=0.28.0"
 
 [dev-packages]
 # setuptools is needed for building the package
@@ -31,6 +33,10 @@ aiohttp = ">=3.10.11"
 pytest-asyncio = ">=0.23.8"
 # types-requests is needed for type hints for requests
 types-requests="*"
+# bandit is needed for security checks
+bandit = ">=1.8.3"
+# ruff is needed for linting
+ruff = ">=0.11.5"
 
 
 # These dependencies are required for pipenv-setup.  They conflict with ones above, so we install these

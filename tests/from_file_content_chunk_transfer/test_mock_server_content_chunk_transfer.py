@@ -34,6 +34,7 @@ def test_mock_server_from_file_content_type_form_urlencoded() -> None:
         mock_server_url + "/" + test_name,
         headers={"Accept": "application/fhir+ndjson"},
         stream=True,
+        timeout=60,
     )
 
     assert matched_response.status_code == 200
