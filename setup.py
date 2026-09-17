@@ -22,7 +22,12 @@ except IOError:
 
 # create the package setup
 setup(
-    install_requires=["requests", "deepdiff>8", "uvicorn>=0.28.0"],
+    install_requires=[
+        "requests",
+        "deepdiff>=8.6.2,<9",
+        "uvicorn>=0.28.0",
+        "urllib3>=2.7.0",
+    ],
     name=package_name,
     version=version,
     author="Imran Qureshi",

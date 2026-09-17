@@ -5,10 +5,15 @@ name = "pypi"
 
 [packages]
 requests = "*"
-# deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes
-deepdiff = ">8"
+# deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes, as did 9.0.0,
+# so stay on 8.x.  8.6.2 is the floor for CVE-2025-58367 (Delta class pollution) and CVE-2026-33155.
+deepdiff = ">=8.6.2,<9"
 # uvicorn is a Python library for running ASGI applications
 uvicorn = ">=0.28.0"
+# urllib3 is not imported directly; it comes in transitively via requests.  Pinned here only as a
+# security floor: <2.7.0 is affected by CVE-2025-66418, CVE-2025-66471, CVE-2026-21441 (decompression
+# bombs) and CVE-2026-44431 (headers leaked across origins on proxied redirects).
+urllib3 = ">=2.7.0"
 
 [dev-packages]
 # setuptools is needed for building the package
@@ -35,8 +40,12 @@ pytest-asyncio = ">=0.23.8"
 types-requests="*"
 # bandit is needed for security checks
 bandit = ">=1.8.3"
-# ruff is needed for linting
-ruff = ">=0.11.5"
+# ruff is needed for linting.  Capped below 0.13 deliberately: this repo has no pyproject.toml or
+# ruff.toml, so ruff's built-in defaults ARE the lint config, and ruff changes its default rule
+# selection and formatter stable style across pre-1.0 minor releases.  0.16.8 flagged 503 new errors
+# (UP006/I001/FURB105) and reformatted 4 files with no source change.  Lift this cap in a dedicated
+# PR that adds an explicit ruff config, not in a security bump.
+ruff = ">=0.11.5,<0.13"
 
 
 # These dependencies are required for pipenv-setup.  They conflict with ones above, so we install these
