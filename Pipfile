@@ -5,10 +5,15 @@ name = "pypi"
 
 [packages]
 requests = "*"
-# deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes
-deepdiff = ">8"
+# deepdiff is needed for comparing data structures.  8.0.0 introduced breaking changes, as did 9.0.0,
+# so stay on 8.x.  8.6.2 is the floor for CVE-2025-58367 (Delta class pollution) and CVE-2026-33155.
+deepdiff = ">=8.6.2,<9"
 # uvicorn is a Python library for running ASGI applications
 uvicorn = ">=0.28.0"
+# urllib3 is not imported directly; it comes in transitively via requests.  Pinned here only as a
+# security floor: <2.7.0 is affected by CVE-2025-66418, CVE-2025-66471, CVE-2026-21441 (decompression
+# bombs) and CVE-2026-44431 (headers leaked across origins on proxied redirects).
+urllib3 = ">=2.7.0"
 
 [dev-packages]
 # setuptools is needed for building the package

@@ -13,7 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # fetch-depth: 0 pulls the full history and tags so `git describe` below can resolve them
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -22,16 +25,18 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
+    # Previously WyriHaximus/github-action-get-previous-tag@master and
+    # DamianReeves/write-file-action@master.  Both were third-party actions tracking a mutable
+    # branch, in the one workflow that holds secrets.PYPI -- a compromise of either upstream
+    # would have leaked the publish token.  Inlined so there is no third-party code in this job.
     - name: Get Previous tag
       id: previoustag
-      uses: WyriHaximus/github-action-get-previous-tag@master
+      run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
     - name: Set release tag in VERSION
-      uses: DamianReeves/write-file-action@master
-      with:
-        path: VERSION
-        contents: |
-          ${{ steps.previoustag.outputs.tag }}
-        write-mode: overwrite
+      env:
+        # passed via env rather than interpolated into the script to avoid a shell-injection sink
+        PREVIOUS_TAG: ${{ steps.previoustag.outputs.tag }}
+      run: printf '%s\n' "$PREVIOUS_TAG" > VERSION
     - name: Build and publish
       env:
         TWINE_USERNAME: __token__
