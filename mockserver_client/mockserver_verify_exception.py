@@ -57,7 +57,10 @@ class MockServerVerifyException(Exception):
                                                 exception.expected_file_path = Path(
                                                     file_name
                                                 )
-                                    else:
+                                    elif (
+                                        "resourceType" in json_data
+                                        and "id" in json_data
+                                    ):
                                         if (
                                             json_data["resourceType"] == resourceType
                                             and json_data["id"] == id_
